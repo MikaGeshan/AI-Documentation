@@ -3,104 +3,21 @@ import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL } from '@env';
 import { getFolderContents, convertDocument } from './documentProcess';
 import { isGreeting } from '../utils/greetings';
 import { isAppListQuery, GetAppListQuery } from '../utils/appListQuery';
-import { cacheDocument, getCachedDocument } from './documentCacheManager';
+import { getCachedDocument, cacheDocument } from './documentCacheManager';
+import { cutText, detectMentionedApps, extractAppNames } from '../utils/text';
 
 const MAX_DOCS = 4;
-const MAX_TEXT_PER_DOC = 2000;
 
-const truncateText = (text, maxLength = MAX_TEXT_PER_DOC) =>
-  text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
-
-const extractAppNames = documents => {
-  const rawNames = documents.flatMap(doc => {
-    const name = doc.name?.split('.')[0] || '';
-    const folder = doc.folder || '';
-    return [name, folder];
-  });
-
-  const cleaned = rawNames
-    .map(name =>
-      name
-        .replace(/[_-]/g, ' ')
-        .replace(/\b(Doc|Documentation|Manual|Guide)\b/gi, '')
-        .trim(),
-    )
-    .filter(Boolean);
-
-  return [...new Set(cleaned)];
-};
-
-const detectMentionedApps = (userMessage, appNames) => {
-  const lowerMsg = userMessage.toLowerCase();
-  return appNames.filter(name => lowerMsg.includes(name.toLowerCase()));
-};
-
-export const deepSeekResponse = async userMessage => {
-  try {
-    if (isGreeting(userMessage)) {
-      return 'Halo! Ada yang bisa saya bantu untuk mencarikan dokumentasi aplikasi dari divisi Front End Mobile? 😊';
-    }
-    if (isAppListQuery(userMessage)) {
-      return await GetAppListQuery(userMessage);
-    }
-
-    const documents = await getFolderContents();
-    if (!Array.isArray(documents) || documents.length === 0) {
-      return 'Tidak ada dokumen yang tersedia.';
-    }
-
-    const appNames = extractAppNames(documents);
-    const mentionedApps = detectMentionedApps(userMessage, appNames);
-
-    if (mentionedApps.length === 0) {
-      return 'Tidak ditemukan nama aplikasi dalam pertanyaan Anda.';
-    }
-
-    const matchedDocs = documents
-      .filter(doc =>
-        mentionedApps.some(app =>
-          doc.name.toLowerCase().includes(app.toLowerCase()),
-        ),
-      )
-      .slice(0, MAX_DOCS);
-
-    if (matchedDocs.length === 0) {
-      return 'Tidak ada dokumen yang cocok dengan aplikasi yang disebut.';
-    }
-
-    const combinedTextParts = [];
-    for (const doc of matchedDocs) {
-      const url = doc.downloadUrl;
-      if (!url || typeof url !== 'string' || !url.startsWith('http')) {
-        console.warn('Lewatkan dokumen tanpa URL valid:', doc.name);
-        continue;
-      }
-
-      let cached = await getCachedDocument(url);
-      if (!cached) {
-        cached = await convertDocument(url);
-        if (cached?.content) {
-          await cacheDocument(url, cached);
-        }
-      }
-
-      combinedTextParts.push(cached);
-    }
-
-    if (combinedTextParts.length === 0) {
-      return 'Gagal memproses isi dokumen.';
-    }
-
-    // Build prompt
-    const finalPrompt = `
+// Format prompt utama untuk AI
+const SYSTEM_PROMPT = (docs, userMessage) => `
 Berikut ini adalah bagian-bagian dari dokumentasi aplikasi yang relevan dengan pertanyaan user:
 
-${combinedTextParts
+${docs
   .map(
     doc => `### Dokumen: ${doc.title || 'Tanpa Judul'}
 Link: ${doc.url}
 
-${truncateText(doc.content)}`,
+${cutText(doc.content)}`,
   )
   .join('\n\n')}
 
@@ -117,10 +34,65 @@ Petunjuk untuk menjawab:
 - Jangan menambahkan informasi yang tidak ada di dokumen (hindari asumsi atau generalisasi).
 `;
 
-    console.log('Prompt Length:', finalPrompt.length, 'chars');
+export const deepSeekResponse = async originalUserMessage => {
+  try {
+    let userMessage = originalUserMessage.trim();
 
-    // Call DeepSeek API
-    const response = await axios.post(
+    if (isGreeting(userMessage)) {
+      if (isAppListQuery(userMessage)) {
+        const list = await GetAppListQuery(userMessage);
+        return `Halo! 😊 Berikut adalah daftar aplikasi yang kamu tanyakan:\n\n${list}`;
+      }
+      return 'Halo! Ada yang bisa saya bantu untuk mencarikan dokumentasi aplikasi dari divisi Front End Mobile? 😊';
+    }
+
+    const documents = await getFolderContents();
+    if (!Array.isArray(documents) || documents.length === 0)
+      return 'Tidak ada dokumen yang tersedia.';
+
+    const appNames = extractAppNames(documents);
+    const mentionedApps = detectMentionedApps(userMessage, appNames);
+    if (mentionedApps.length === 0)
+      return 'Tidak ditemukan nama aplikasi dalam pertanyaan Anda.';
+
+    const matchedDocs = documents
+      .filter(doc =>
+        mentionedApps.some(app =>
+          doc.name.toLowerCase().includes(app.toLowerCase()),
+        ),
+      )
+      .slice(0, MAX_DOCS);
+
+    if (matchedDocs.length === 0)
+      return 'Tidak ada dokumen yang cocok dengan aplikasi yang disebut.';
+
+    const docChunks = [];
+    for (const doc of matchedDocs) {
+      const url = doc.downloadUrl;
+      if (!url || !url.startsWith('http')) {
+        console.warn('Lewatkan dokumen tanpa URL valid:', doc.name);
+        continue;
+      }
+
+      const cached = await getCachedDocument(url);
+      if (cached) {
+        docChunks.push(cached);
+        continue;
+      }
+
+      const converted = await convertDocument(url);
+      if (converted?.content) {
+        await cacheDocument(url, converted);
+        docChunks.push(converted);
+      }
+    }
+
+    if (docChunks.length === 0) return 'Gagal memproses isi dokumen.';
+
+    const prompt = SYSTEM_PROMPT(docChunks, userMessage);
+    console.log('Prompt Length:', prompt.length, 'chars');
+
+    const { data } = await axios.post(
       DEEPSEEK_URL,
       {
         model: DEEPSEEK_MODEL,
@@ -133,7 +105,7 @@ Tugasmu:
 - Bila pertanyaannya membandingkan dua atau lebih aplikasi, bantu bandingkan dari sisi fitur, fungsi, kelebihan/kekurangan, atau detail teknis lainnya.
 - Jawaban harus singkat, jelas, dan relevan. Hindari isi yang tidak terkait langsung.`,
           },
-          { role: 'user', content: finalPrompt },
+          { role: 'user', content: prompt },
         ],
         temperature: 0.3,
       },
@@ -145,11 +117,11 @@ Tugasmu:
       },
     );
 
-    const finalAnswer = response.data?.choices?.[0]?.message?.content?.trim();
+    const finalAnswer = data?.choices?.[0]?.message?.content?.trim();
     console.log('AI Final Answer:', finalAnswer);
     return finalAnswer || 'Tidak ada jawaban yang dihasilkan dari dokumen.';
-  } catch (error) {
-    console.error('deep seek response error:', error.message);
+  } catch (err) {
+    console.error('DeepSeek Response error:', err.message);
     return 'Terjadi kesalahan saat memproses permintaan Anda.';
   }
 };
