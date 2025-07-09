@@ -1,14 +1,13 @@
 import axios from 'axios';
 import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL } from '@env';
 import { getFolderContents, convertDocument } from './documentProcess';
-import { isGreeting } from '../utils/greetings';
-import { isAppListQuery, GetAppListQuery } from '../utils/appListQuery';
+import { greetingsAndListApp } from '../utils/greetings';
 import { getCachedDocument, cacheDocument } from './documentCacheManager';
 import { cutText, detectMentionedApps, extractAppNames } from '../utils/text';
+import { GetAppListQuery, isAppListQuery } from '../utils/appListQuery';
 
 const MAX_DOCS = 4;
 
-// Format prompt utama untuk AI
 const SYSTEM_PROMPT = (docs, userMessage) => `
 Berikut ini adalah bagian-bagian dari dokumentasi aplikasi yang relevan dengan pertanyaan user:
 
@@ -38,22 +37,21 @@ export const deepSeekResponse = async originalUserMessage => {
   try {
     let userMessage = originalUserMessage.trim();
 
-    if (isGreeting(userMessage)) {
-      if (isAppListQuery(userMessage)) {
-        const list = await GetAppListQuery(userMessage);
-        return `Halo! 😊 Berikut adalah daftar aplikasi yang kamu tanyakan:\n\n${list}`;
-      }
-      return 'Halo! Ada yang bisa saya bantu untuk mencarikan dokumentasi aplikasi dari divisi Front End Mobile? 😊';
-    }
+    const earlyResponse = await greetingsAndListApp(userMessage);
+
+    // console.log('earlyResponse:', earlyResponse);
+
+    if (earlyResponse) return earlyResponse;
 
     const documents = await getFolderContents();
     if (!Array.isArray(documents) || documents.length === 0)
-      return 'Tidak ada dokumen yang tersedia.';
+      return 'No documents available.';
 
     const appNames = extractAppNames(documents);
+
     const mentionedApps = detectMentionedApps(userMessage, appNames);
     if (mentionedApps.length === 0)
-      return 'Tidak ditemukan nama aplikasi dalam pertanyaan Anda.';
+      return 'No Applications base on your questions .';
 
     const matchedDocs = documents
       .filter(doc =>
@@ -64,7 +62,7 @@ export const deepSeekResponse = async originalUserMessage => {
       .slice(0, MAX_DOCS);
 
     if (matchedDocs.length === 0)
-      return 'Tidak ada dokumen yang cocok dengan aplikasi yang disebut.';
+      return 'No document matched on your question.';
 
     const docChunks = [];
     for (const doc of matchedDocs) {
