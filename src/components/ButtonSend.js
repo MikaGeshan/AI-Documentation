@@ -1,8 +1,13 @@
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import React from 'react';
-import { ArrowUp } from 'lucide-react-native';
+import Icon from './Icon';
 
-const ButtonSend = ({ onPress }) => {
+const ButtonSend = ({
+  onPress,
+  iconName = 'ArrowUp',
+  iconColor = 'white',
+  iconSize = 20,
+}) => {
   const styles = StyleSheet.create({
     button: {
       borderWidth: 1,
@@ -15,7 +20,7 @@ const ButtonSend = ({ onPress }) => {
 
   return (
     <TouchableOpacity style={styles.button} onPress={onPress}>
-      <ArrowUp color="white" size={20} />
+      <Icon name={iconName} color={iconColor} size={iconSize} />
     </TouchableOpacity>
   );
 };

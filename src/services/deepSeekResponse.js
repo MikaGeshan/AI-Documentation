@@ -4,7 +4,6 @@ import { getFolderContents, convertDocument } from './documentProcess';
 import { greetingsAndListApp } from '../utils/greetings';
 import { getCachedDocument, cacheDocument } from './documentCacheManager';
 import { cutText, detectMentionedApps, extractAppNames } from '../utils/text';
-import { GetAppListQuery, isAppListQuery } from '../utils/appListQuery';
 
 const MAX_DOCS = 4;
 

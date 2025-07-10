@@ -21,12 +21,18 @@ const Header = () => {
       fontSize: 17,
       fontWeight: '500',
     },
+    subtext: {
+      textAlign: 'center',
+      fontSize: 12,
+      fontWeight: '300',
+    },
   });
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.textContainer}>
         <Text style={styles.text}>Mobile Documentation Chatbot</Text>
+        <Text style={styles.subtext}>Powered by DeepSeek</Text>
       </View>
     </SafeAreaView>
   );

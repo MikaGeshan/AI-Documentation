@@ -4,6 +4,7 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
+  Text,
   View,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
@@ -60,9 +61,20 @@ const HomeScreen = () => {
       paddingBottom: 20,
     },
     inputBoxWrapper: {
-      padding: 10,
-      paddingBottom: 20,
+      paddingHorizontal: 10,
+      paddingVertical: 10,
       backgroundColor: '#EFEDEC',
+    },
+    infoContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 10,
+    },
+    infoText: {
+      textAlign: 'center',
+      fontSize: 12,
+      color: '#B3B5B2',
     },
   });
 
@@ -93,6 +105,11 @@ const HomeScreen = () => {
           </ScrollView>
           <View style={styles.inputBoxWrapper}>
             <InputBox onSend={handleSendMessage} />
+          </View>
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>
+              AI can make mistakes. Always verify the official documentation.
+            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>

@@ -3,14 +3,21 @@ import React, { useState } from 'react';
 import ButtonSend from './ButtonSend';
 
 const InputBox = ({ onSend }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [text, setText] = useState('');
 
   const sendMessage = async () => {
     const trimmed = text.trim();
     if (!trimmed) return;
-
-    onSend(trimmed);
+    setIsLoading(true);
+    const messageToSend = trimmed;
     setText('');
+
+    try {
+      await onSend(messageToSend);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const styles = StyleSheet.create({
@@ -42,7 +49,10 @@ const InputBox = ({ onSend }) => {
         value={text}
         onChangeText={setText}
       />
-      <ButtonSend onPress={sendMessage} />
+      <ButtonSend
+        onPress={sendMessage}
+        iconName={isLoading ? 'Square' : 'ArrowUp'}
+      />
     </View>
   );
 };
