@@ -4,6 +4,7 @@ import { getFolderContents, convertDocument } from './documentProcess';
 import { greetingsAndListApp } from '../utils/greetings';
 import { getCachedDocument, cacheDocument } from './documentCacheManager';
 import { cutText, detectMentionedApps, extractAppNames } from '../utils/text';
+import { createAbortController, getAbortSignal } from './abortDeepSeekResponse';
 
 const MAX_DOCS = 4;
 
@@ -36,9 +37,11 @@ Petunjuk untuk menjawab:
 
 export const deepSeekResponse = async originalUserMessage => {
   try {
-    let userMessage = originalUserMessage.trim();
+    const controller = createAbortController();
 
+    let userMessage = originalUserMessage.trim();
     const earlyResponse = await greetingsAndListApp(userMessage);
+    if (earlyResponse) return earlyResponse;
 
     // console.log('earlyResponse:', earlyResponse);
 
@@ -98,15 +101,8 @@ export const deepSeekResponse = async originalUserMessage => {
         messages: [
           {
             role: 'system',
-            content: `Kamu adalah asisten dokumentasi teknis yang cerdas dan efisien. 
-Tugasmu:
-- Menjawab pertanyaan hanya berdasarkan dokumen yang diberikan.
-- Bila pertanyaannya membandingkan dua atau lebih aplikasi, bantu bandingkan dari sisi fitur, fungsi, kelebihan/kekurangan, atau detail teknis lainnya.
-- Jika pertanyaan menyebut satu aplikasi, berikan jawaban yang selengkap mungkin dari dokumen.
-- Jangan pernah membocorkan informasi internal atau menyimpulkan hal yang tidak ada secara eksplisit dalam dokumen.
-- Jawaban harus singkat, jelas, dan relevan. Hindari isi yang tidak terkait langsung.`,
+            content: `Kamu adalah asisten dokumentasi teknis yang cerdas dan efisien. ...`,
           },
-
           { role: 'user', content: prompt },
         ],
         temperature: 0.3,
@@ -116,13 +112,20 @@ Tugasmu:
           'Content-Type': 'application/json',
           Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
         },
+        signal: getAbortSignal(),
       },
     );
 
     const finalAnswer = data?.choices?.[0]?.message?.content?.trim();
-    console.log('AI Final Answer:', finalAnswer);
     return finalAnswer || 'Tidak ada jawaban yang dihasilkan dari dokumen.';
   } catch (err) {
+    if (
+      axios.isCancel(err) ||
+      err.name === 'CanceledError' ||
+      err.message === 'canceled'
+    ) {
+      return 'Permintaan dibatalkan oleh pengguna.';
+    }
     console.error('DeepSeek Response error:', err.message);
     return 'Terjadi kesalahan saat memproses permintaan Anda.';
   }

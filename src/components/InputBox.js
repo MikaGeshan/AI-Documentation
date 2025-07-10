@@ -1,22 +1,35 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 import React, { useState } from 'react';
 import ButtonSend from './ButtonSend';
+import { abortDeepSeekRequest } from '../services/abortDeepSeekResponse';
 
 const InputBox = ({ onSend }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [text, setText] = useState('');
 
   const sendMessage = async () => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    setIsLoading(true);
+    setIsProcessing(true);
+    console.log(' Mode: SEND — Mengirim pertanyaan:', trimmed);
     const messageToSend = trimmed;
     setText('');
 
     try {
       await onSend(messageToSend);
     } finally {
-      setIsLoading(false);
+      setIsProcessing(false);
+      console.log('Status: SELESAI — Selesai mengirim atau dibatalkan');
+    }
+  };
+
+  const handleButtonPress = () => {
+    if (isProcessing) {
+      console.log('Mode: STOP — Membatalkan permintaan...');
+      abortDeepSeekRequest();
+      setIsProcessing(false);
+    } else {
+      sendMessage();
     }
   };
 
@@ -50,8 +63,8 @@ const InputBox = ({ onSend }) => {
         onChangeText={setText}
       />
       <ButtonSend
-        onPress={sendMessage}
-        iconName={isLoading ? 'Square' : 'ArrowUp'}
+        onPress={handleButtonPress}
+        iconName={isProcessing ? 'Square' : 'ArrowUp'}
       />
     </View>
   );
