@@ -1,12 +1,19 @@
 import { getFolderContents } from '../services/documentProcess';
 
 export const isAppListQuery = userMessage => {
-  const lower = userMessage.toLowerCase();
-  const patterns = [
-    /(apa|sebutkan|daftar|list|tolong|ada).*(aplikasi|app|fitur|program|tools)/i,
-    /(aplikasi|fitur|program|tools).*(apa|saja|yang tersedia)/i,
+  const lower = userMessage.toLowerCase().trim();
+  const matchPatterns = [
+    /^apa saja aplikasi/i,
+    /^sebutkan aplikasi/i,
+    /^list aplikasi/i,
+    /^daftar aplikasi/i,
+    /^dokumen yang tersedia/i,
+    /^dokumen apa saja/i,
+    /^aplikasi apa saja yang tersedia/i,
+    /^tolong tampilkan daftar aplikasi/i,
   ];
-  return patterns.some(pattern => pattern.test(lower));
+
+  return matchPatterns.some(pattern => pattern.test(lower));
 };
 
 console.log(isAppListQuery('Apa saja aplikasi yang terdokumentasi?'));
@@ -15,8 +22,6 @@ export const GetAppListQuery = async userMessage => {
   const allDocuments = await getFolderContents();
 
   const folderNames = [...new Set(allDocuments.map(doc => doc.folder))];
-
-  // console.log('All folder names:', folderNames);
 
   const lowerMsg = userMessage.toLowerCase();
 

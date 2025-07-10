@@ -26,10 +26,12 @@ Pertanyaan user:
 
 Petunjuk untuk menjawab:
 - Jawablah *hanya berdasarkan informasi dari dokumen-dokumen di atas*.
-- Jika pertanyaan menyebut lebih dari satu aplikasi, bandingkan berdasarkan fitur, fungsi, atau kelebihan/kekurangan yang ada di dokumen.
-- Sebutkan nama aplikasi dan/atau nama dokumen saat menjawab agar jelas referensinya.
-- Gunakan **bullet point** atau **tabel perbandingan** bila cocok.
-- Jangan menambahkan informasi yang tidak ada di dokumen (hindari asumsi atau generalisasi).
+- Jika pertanyaan menyebut satu aplikasi, berikan jawaban yang **selengkap dan sedetail mungkin**, mencakup fitur, cara kerja, kelebihan, atau penggunaan, **selama informasi tersebut ada di dokumen**.
+- Jika pertanyaan menyebut lebih dari satu aplikasi, bandingkan berdasarkan fitur, fungsi, atau kelebihan/kekurangan yang disebutkan di dokumen.
+- Jangan pernah menyimpulkan atau menebak informasi internal atau sensitif yang tidak tertulis secara eksplisit.
+- Selalu sebutkan nama aplikasi dan/atau nama dokumen saat menjawab agar jelas referensinya.
+- Gunakan **bullet point** atau **tabel perbandingan** jika sesuai.
+- Jangan menambahkan informasi dari luar dokumen (hindari asumsi, spekulasi, atau generalisasi).
 `;
 
 export const deepSeekResponse = async originalUserMessage => {
@@ -100,8 +102,11 @@ export const deepSeekResponse = async originalUserMessage => {
 Tugasmu:
 - Menjawab pertanyaan hanya berdasarkan dokumen yang diberikan.
 - Bila pertanyaannya membandingkan dua atau lebih aplikasi, bantu bandingkan dari sisi fitur, fungsi, kelebihan/kekurangan, atau detail teknis lainnya.
+- Jika pertanyaan menyebut satu aplikasi, berikan jawaban yang selengkap mungkin dari dokumen.
+- Jangan pernah membocorkan informasi internal atau menyimpulkan hal yang tidak ada secara eksplisit dalam dokumen.
 - Jawaban harus singkat, jelas, dan relevan. Hindari isi yang tidak terkait langsung.`,
           },
+
           { role: 'user', content: prompt },
         ],
         temperature: 0.3,

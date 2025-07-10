@@ -34,10 +34,7 @@ export const getInitialGreeting = () => {
 export const greetingsAndListApp = async message => {
   const greetingDetected = isGreeting(message);
   const appListDetected = isAppListQuery(message);
-
-  // console.log('[DEBUG] greetingDetected:', greetingDetected);
-  // console.log('[DEBUG] appListDetected:', appListDetected);
-  // console.log('[DEBUG] message:', message);
+  console.log('[INFO] greetingsAndListApp triggered by:', message);
 
   if (greetingDetected && appListDetected) {
     const list = await GetAppListQuery(message);
@@ -45,7 +42,7 @@ export const greetingsAndListApp = async message => {
   }
 
   if (greetingDetected) {
-    return 'Halo! Ada yang bisa saya bantu untuk mencarikan dokumentasi aplikasi dari divisi Front End Mobile? 😊';
+    return getInitialGreeting();
   }
 
   if (appListDetected) {
