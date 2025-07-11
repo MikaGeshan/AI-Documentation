@@ -12,10 +12,11 @@ import InputBox from '../components/InputBox';
 import BubbleChat from '../components/BubbleChat';
 import { deepSeekResponse } from '../services/deepSeekResponse';
 import { getInitialGreeting } from '../utils/greetings';
+import { useLoadingMessage } from '../hooks/loadingMessage';
 
 const HomeScreen = () => {
+  const { stage, startStage, resetStage, loadingMessage } = useLoadingMessage();
   const [messages, setMessages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const greeting = getInitialGreeting();
@@ -34,18 +35,19 @@ const HomeScreen = () => {
       sender: 'user',
     };
     setMessages(prev => [...prev, userMessage]);
-    setIsLoading(true);
 
-    const aiText = await deepSeekResponse(userText);
+    const aiText = await deepSeekResponse(userText, {
+      startStage,
+      resetStage,
+    });
 
     const aiMessage = {
-      id: (Date.now() + 1).toString(),
+      id: `ai-${Date.now()}`,
       text: aiText,
       sender: 'ai',
     };
 
     setMessages(prev => [...prev, aiMessage]);
-    setIsLoading(false);
   };
 
   const styles = StyleSheet.create({
@@ -99,8 +101,12 @@ const HomeScreen = () => {
               />
             ))}
 
-            {isLoading && (
-              <BubbleChat key="loading" message="..." isUserChat={false} />
+            {loadingMessage && (
+              <BubbleChat
+                key="loading"
+                message={loadingMessage}
+                isUserChat={false}
+              />
             )}
           </ScrollView>
           <View style={styles.inputBoxWrapper}>

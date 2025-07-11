@@ -38,7 +38,11 @@ Petunjuk untuk menjawab:
 - Jangan menambahkan informasi dari luar dokumen (hindari asumsi, spekulasi, atau generalisasi).
 `;
 
-export const deepSeekResponse = async originalUserMessage => {
+export const deepSeekResponse = async (
+  originalUserMessage,
+  loadingController,
+) => {
+  const { startStage, resetStage } = loadingController || {};
   try {
     const controller = createAbortController();
 
@@ -50,6 +54,7 @@ export const deepSeekResponse = async originalUserMessage => {
 
     if (earlyResponse) return earlyResponse;
 
+    startStage?.('fetching');
     const documents = await getFolderContents();
     if (!Array.isArray(documents) || documents.length === 0)
       return 'No documents available.';
@@ -71,6 +76,7 @@ export const deepSeekResponse = async originalUserMessage => {
     if (matchedDocs.length === 0)
       return 'No document matched on your question.';
 
+    startStage?.('parsing');
     const docChunks = [];
     for (const doc of matchedDocs) {
       const url = doc.downloadUrl;
@@ -94,6 +100,7 @@ export const deepSeekResponse = async originalUserMessage => {
 
     if (docChunks.length === 0) return 'Gagal memproses isi dokumen.';
 
+    startStage?.('reading');
     const prompt = SYSTEM_PROMPT(docChunks, userMessage);
     console.log('Prompt Length:', prompt.length, 'chars');
 
@@ -118,10 +125,11 @@ export const deepSeekResponse = async originalUserMessage => {
         signal: getAbortSignal(),
       },
     );
-
+    resetStage?.();
     const finalAnswer = data?.choices?.[0]?.message?.content?.trim();
     return finalAnswer || 'Tidak ada jawaban yang dihasilkan dari dokumen.';
   } catch (err) {
+    resetStage?.();
     if (
       axios.isCancel(err) ||
       err.name === 'CanceledError' ||
