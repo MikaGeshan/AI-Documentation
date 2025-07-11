@@ -4,7 +4,10 @@ import { getFolderContents, convertDocument } from './documentProcess';
 import { greetingsAndListApp } from '../utils/greetings';
 import { getCachedDocument, cacheDocument } from './documentCacheManager';
 import { cutText, detectMentionedApps, extractAppNames } from '../utils/text';
-import { createAbortController, getAbortSignal } from './abortDeepSeekResponse';
+import {
+  createAbortController,
+  getAbortSignal,
+} from '../hooks/abortDeepSeekResponse';
 
 const MAX_DOCS = 4;
 
