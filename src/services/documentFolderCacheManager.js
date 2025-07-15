@@ -1,3 +1,4 @@
+// utils/storage.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const preloadAllFolders = async () => {
@@ -20,15 +21,8 @@ export const preloadAllFolders = async () => {
     })
     .filter(doc => doc && doc.folder);
 
-  for (const folder of folderList) {
-    const docsInFolder = allDocs.filter(doc => doc.folder === folder);
-    console.log(`Folder: ${folder}`);
-    if (docsInFolder.length === 0) {
-      console.log('  (no documents)');
-    } else {
-      docsInFolder.forEach(doc =>
-        console.log(`${doc.title || doc.name || '(no title)'}`),
-      );
-    }
-  }
+  return folderList.map(folder => ({
+    folderName: folder,
+    docs: allDocs.filter(doc => doc.folder === folder),
+  }));
 };
