@@ -28,6 +28,24 @@ export const RootNavigation = () => {
 
 const Tab = createBottomTabNavigator();
 
+const DocumentsHeader = () => {
+  return (
+    <Header
+      title="Mobile Documentation Explorer"
+      description="Browse and search through our documentations"
+    />
+  );
+};
+
+const ChatHeader = () => {
+  return (
+    <Header
+      title="Mobile Documentation Chatbot"
+      description="Powered by DeepSeek"
+    />
+  );
+};
+
 export const BottomTabNavigation = () => {
   return (
     <Tab.Navigator
@@ -40,6 +58,7 @@ export const BottomTabNavigation = () => {
         name="Documents"
         component={DocumentsScreen}
         options={{
+          header: DocumentsHeader,
           tabBarIcon: ({ color, size }) => (
             <Icon name="FileText" color={color} size={size} />
           ),
@@ -49,7 +68,7 @@ export const BottomTabNavigation = () => {
         name="Chat"
         component={ChatScreen}
         options={{
-          header: Header,
+          header: ChatHeader,
           tabBarIcon: ({ color, size }) => (
             <Icon name="MessageCircle" color={color} size={size} />
           ),

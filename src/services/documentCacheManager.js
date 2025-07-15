@@ -50,12 +50,20 @@ export const preloadAllDocuments = async () => {
         title: result.title || doc.name,
         content: result.content,
         url: result.url || doc.downloadUrl,
+        folder: doc.folderName,
       });
       console.log(`Cache saved${doc.name}`);
     } else {
       console.warn(`Error converting document: ${doc.name}`);
     }
   }
+
+  const folderNames = [
+    ...new Set(documents.map(doc => doc.folder).filter(Boolean)),
+  ];
+
+  await AsyncStorage.setItem('doc-folder-list', JSON.stringify(folderNames));
+  console.log('Folder names cached:', folderNames);
 
   console.log('Done Preloading');
 };

@@ -1,7 +1,7 @@
 import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
 
-const Header = () => {
+const Header = ({ title, description }) => {
   const styles = StyleSheet.create({
     container: {
       backgroundColor: '#EFEDEC',
@@ -31,8 +31,8 @@ const Header = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.textContainer}>
-        <Text style={styles.text}>Mobile Documentation Chatbot</Text>
-        <Text style={styles.subtext}>Powered by DeepSeek</Text>
+        <Text style={styles.text}>{title}</Text>
+        <Text style={styles.subtext}>{description}</Text>
       </View>
     </SafeAreaView>
   );
