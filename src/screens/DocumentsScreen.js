@@ -14,6 +14,22 @@ import Accordion from '../components/Accordion';
 const DocumentsScreen = () => {
   const [folders, setFolders] = useState([]);
 
+  const formatDocName = name => {
+    if (!name) return '(untitled)';
+
+    const cleanedName = name
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[-_]/g, ' ')
+      .replace(/\(Converted\)/gi, '')
+      .trim();
+
+    return cleanedName
+      .split(' ')
+      .filter(word => word.length > 0)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   useEffect(() => {
     const loadFolders = async () => {
       try {
@@ -69,7 +85,7 @@ const DocumentsScreen = () => {
                 folder.docs.map((doc, idx) => (
                   <View key={idx} style={styles.docItem}>
                     <Text style={styles.docText}>
-                      {doc.title || doc.name || '(no title)'}
+                      {formatDocName(doc.title || doc.name || '(no title)')}
                     </Text>
                   </View>
                 ))

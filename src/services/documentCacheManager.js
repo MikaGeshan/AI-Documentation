@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFolderContents, convertDocument } from './documentProcess';
 
 const CACHE_PREFIX = 'doc-cache-';
-const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 jam
+const CACHE_TTL = 1000 * 60 * 60 * 24;
 
 const getCacheKey = fileId => `${CACHE_PREFIX}${fileId}`;
 
@@ -37,7 +37,6 @@ export const preloadAllDocuments = async () => {
   const grouped = {};
 
   for (const doc of documents) {
-    // console.log('Sample doc:', doc);
     const fileId = extractFileId(doc.downloadUrl);
     if (!fileId) continue;
 
