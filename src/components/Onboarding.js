@@ -23,15 +23,28 @@ const Onboarding = ({ slides, onDone }) => {
     },
     slide: {
       width,
-      justifyContent: 'center',
-      alignItems: 'center',
       padding: 24,
       paddingBottom: 120,
+    },
+    contentContainer: {
+      flex: 1,
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    imageContainer: {
+      height: 300,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     image: {
       width: 250,
       height: 250,
-      marginBottom: 32,
+    },
+    textContainer: {
+      height: 150,
+      maxHeight: 180,
+      justifyContent: 'flex-start',
+      alignItems: 'center',
     },
     title: {
       fontSize: 28,
@@ -43,7 +56,7 @@ const Onboarding = ({ slides, onDone }) => {
       fontSize: 16,
       color: '#666',
       textAlign: 'center',
-      marginVertical: 12,
+      marginTop: 12,
     },
     indicatorContainer: {
       position: 'absolute',
@@ -58,7 +71,7 @@ const Onboarding = ({ slides, onDone }) => {
       backgroundColor: '#333',
       margin: 6,
     },
-    buttonWrapper: {
+    buttonContainer: {
       position: 'absolute',
       bottom: 20,
       alignSelf: 'center',
@@ -79,17 +92,22 @@ const Onboarding = ({ slides, onDone }) => {
             key={index}
             style={[styles.slide, { backgroundColor: item.backgroundColor }]}
           >
-            <Image
-              source={item.image}
-              style={styles.image}
-              resizeMode="contain"
-            />
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.subtitle}>{item.subtitle}</Text>
-
+            <View style={styles.contentContainer}>
+              <View style={styles.imageContainer}>
+                <Image
+                  source={item.image}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+              </View>
+              <View style={styles.textContainer}>
+                <Text style={styles.title}>{item.title}</Text>
+                <Text style={styles.subtitle}>{item.subtitle}</Text>
+              </View>
+            </View>
             {index === slides.length - 1 && (
-              <View style={styles.buttonWrapper}>
-                <Button text="Next" onPress={onDone} />
+              <View style={styles.buttonContainer}>
+                <Button text="Get Started" onPress={onDone} />
               </View>
             )}
           </View>
@@ -99,16 +117,13 @@ const Onboarding = ({ slides, onDone }) => {
       <View style={styles.indicatorContainer}>
         {slides.map((_, i) => {
           const animatedStyle = useAnimatedStyle(() => {
+            const position = scrollX.value / width;
             const opacity = interpolate(
-              scrollX.value / width,
+              position,
               [i - 1, i, i + 1],
               [0.3, 1, 0.3],
             );
-            const scale = interpolate(
-              scrollX.value / width,
-              [i - 1, i, i + 1],
-              [1, 1.5, 1],
-            );
+            const scale = interpolate(position, [i - 1, i, i + 1], [1, 1.5, 1]);
             return {
               opacity,
               transform: [{ scale }],

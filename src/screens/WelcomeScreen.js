@@ -1,12 +1,5 @@
-import {
-  KeyboardAvoidingView,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, SafeAreaView, StyleSheet } from 'react-native';
 import React from 'react';
-import Button from '../components/Button';
 import { useNavigation } from '@react-navigation/native';
 import Onboarding from '../components/Onboarding';
 
@@ -21,8 +14,8 @@ const WelcomeScreen = () => {
       image: require('../assets/man-book.png'),
     },
     {
-      title: 'Get Started',
-      subtitle: 'Let’s begin your journey!',
+      title: 'Getting Started',
+      subtitle: 'Let’s begin your first tour on our application!',
       backgroundColor: '#FFFFF',
       image: require('../assets/man-laptop.png'),
     },
