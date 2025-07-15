@@ -16,9 +16,10 @@ export const getFolderContents = async () => {
     const mapped = files.map(file => {
       return {
         ...file,
-        downloadUrl: file.id
-          ? `https://drive.google.com/uc?id=${file.id}&export=download`
-          : null,
+        downloadUrl:
+          file.link || file.id
+            ? `https://drive.google.com/uc?id=${file.id}&export=download`
+            : null,
       };
     });
     return mapped;

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFolderContents, convertDocument } from './documentProcess';
 
 const CACHE_PREFIX = 'doc-cache-';
-const CACHE_TTL = 1000 * 60 * 60 * 24;
+const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 jam
 
 const getCacheKey = fileId => `${CACHE_PREFIX}${fileId}`;
 
@@ -34,37 +34,50 @@ export const preloadAllDocuments = async () => {
   console.log('Preloading Documents...');
   const documents = await getFolderContents();
 
+  const grouped = {};
+
   for (const doc of documents) {
+    // console.log('Sample doc:', doc);
     const fileId = extractFileId(doc.downloadUrl);
     if (!fileId) continue;
 
     const cached = await getCachedDocument(fileId);
+    let docData;
+
     if (cached) {
       console.log(`Cache available for ${doc.name}`);
-      continue;
+      docData = {
+        ...cached,
+        folder: cached.folder || doc.folder || 'Lainnya',
+      };
+    } else {
+      const result = await convertDocument(doc.downloadUrl);
+      if (result?.content) {
+        docData = {
+          title: result.title || doc.name,
+          content: result.content,
+          url: result.url || doc.downloadUrl,
+          folder: doc.folder || 'Lainnya',
+        };
+        await cacheDocument(fileId, docData);
+        console.log(`Cache saved: ${doc.name}`);
+      } else {
+        console.warn(`Error converting document: ${doc.name}`);
+        continue;
+      }
     }
 
-    const result = await convertDocument(doc.downloadUrl);
-    if (result?.content) {
-      await cacheDocument(fileId, {
-        title: result.title || doc.name,
-        content: result.content,
-        url: result.url || doc.downloadUrl,
-        folder: doc.folderName,
-      });
-      console.log(`Cache saved${doc.name}`);
-    } else {
-      console.warn(`Error converting document: ${doc.name}`);
-    }
+    const folder = docData.folder || 'Lainnya';
+    if (!grouped[folder]) grouped[folder] = [];
+    grouped[folder].push(docData);
   }
 
-  const folderNames = [
-    ...new Set(documents.map(doc => doc.folder).filter(Boolean)),
-  ];
-
+  const folderNames = Object.keys(grouped);
   await AsyncStorage.setItem('doc-folder-list', JSON.stringify(folderNames));
-  console.log('Folder names cached:', folderNames);
+  await AsyncStorage.setItem('doc-folder-map', JSON.stringify(grouped));
 
+  console.log('Folder names cached:', folderNames);
+  console.log('Grouped folder map saved');
   console.log('Done Preloading');
 };
 

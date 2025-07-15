@@ -8,17 +8,31 @@ import {
   Platform,
   KeyboardAvoidingView,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Accordion from '../components/Accordion';
-import { preloadAllFolders } from '../services/documentFolderCacheManager';
 
 const DocumentsScreen = () => {
   const [folders, setFolders] = useState([]);
 
   useEffect(() => {
     const loadFolders = async () => {
-      const data = await preloadAllFolders();
-      setFolders(data);
+      try {
+        const folderMapStr = await AsyncStorage.getItem('doc-folder-map');
+        if (!folderMapStr) return;
+
+        const folderMap = JSON.parse(folderMapStr);
+        const folderList = Object.entries(folderMap).map(
+          ([folderName, docs]) => ({
+            folderName,
+            docs,
+          }),
+        );
+        setFolders(folderList);
+      } catch (e) {
+        console.error('Error loading folders:', e);
+      }
     };
+
     loadFolders();
   }, []);
 
