@@ -8,6 +8,8 @@ import {
 import React from 'react';
 
 const DocumentsScreen = () => {
+  const styles = StyleSheet.create({});
+
   return (
     <SafeAreaView>
       <KeyboardAvoidingView>
@@ -18,5 +20,3 @@ const DocumentsScreen = () => {
 };
 
 export default DocumentsScreen;
-
-const styles = StyleSheet.create({});

@@ -5,10 +5,11 @@ import Header from '../components/Header';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import DocumentsScreen from '../screens/DocumentsScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import Icon from '../components/Icon';
+
+const Stack = createNativeStackNavigator();
 
 export const RootNavigation = () => {
-  const Stack = createNativeStackNavigator();
-
   return (
     <Stack.Navigator>
       <Stack.Screen
@@ -21,28 +22,38 @@ export const RootNavigation = () => {
         component={BottomTabNavigation}
         options={{ headerShown: false }}
       />
-      <Stack.Screen
-        name="Chat"
-        component={ChatScreen}
-        options={{ header: Header }}
-      />
     </Stack.Navigator>
   );
 };
 
+const Tab = createBottomTabNavigator();
+
 export const BottomTabNavigation = () => {
-  const Tab = createBottomTabNavigator();
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#4B0082',
+        tabBarInactiveTintColor: '#999',
+      }}
+    >
       <Tab.Screen
         name="Documents"
         component={DocumentsScreen}
-        options={{ headerShown: false }}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="FileText" color={color} size={size} />
+          ),
+        }}
       />
       <Tab.Screen
         name="Chat"
         component={ChatScreen}
-        options={{ header: Header }}
+        options={{
+          header: Header,
+          tabBarIcon: ({ color, size }) => (
+            <Icon name="MessageCircle" color={color} size={size} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );
