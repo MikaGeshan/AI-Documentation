@@ -51,7 +51,10 @@ const WelcomeScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView style={styles.container}>
-        <Onboarding slides={slides} onDone={() => navigation.replace('Home')} />
+        <Onboarding
+          slides={slides}
+          onDone={() => navigation.replace('ScreenBottomTabs')}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

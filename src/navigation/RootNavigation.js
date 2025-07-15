@@ -3,9 +3,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import ChatScreen from '../screens/ChatScreen';
 import Header from '../components/Header';
 import WelcomeScreen from '../screens/WelcomeScreen';
-import HomeScreen from '../screens/HomeScreen';
+import DocumentsScreen from '../screens/DocumentsScreen';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-const RootNavigation = () => {
+export const RootNavigation = () => {
   const Stack = createNativeStackNavigator();
 
   return (
@@ -16,9 +17,9 @@ const RootNavigation = () => {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{ header: Header }}
+        name="ScreenBottomTabs"
+        component={BottomTabNavigation}
+        options={{ headerShown: false }}
       />
       <Stack.Screen
         name="Chat"
@@ -29,4 +30,20 @@ const RootNavigation = () => {
   );
 };
 
-export default RootNavigation;
+export const BottomTabNavigation = () => {
+  const Tab = createBottomTabNavigator();
+  return (
+    <Tab.Navigator>
+      <Tab.Screen
+        name="Documents"
+        component={DocumentsScreen}
+        options={{ headerShown: false }}
+      />
+      <Tab.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{ header: Header }}
+      />
+    </Tab.Navigator>
+  );
+};
