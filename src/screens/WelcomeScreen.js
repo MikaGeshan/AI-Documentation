@@ -15,7 +15,8 @@ const WelcomeScreen = () => {
     },
     {
       title: 'Getting Started',
-      subtitle: 'Let’s begin your first tour on our application!',
+      subtitle:
+        'Let’s begin your first tour on our application! We’re excited to guide you through the key features so you can get the most out of your experience.',
       backgroundColor: '#FFFFF',
       image: require('../assets/man-laptop.png'),
     },

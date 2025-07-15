@@ -10,6 +10,29 @@ import Button from './Button';
 
 const { width } = Dimensions.get('window');
 
+const Dot = ({ index, scrollX, dotStyle }) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    const position = scrollX.value / width;
+    const opacity = interpolate(
+      position,
+      [index - 1, index, index + 1],
+      [0.3, 1, 0.3],
+    );
+    const scale = interpolate(
+      position,
+      [index - 1, index, index + 1],
+      [1, 1.5, 1],
+    );
+
+    return {
+      opacity,
+      transform: [{ scale }],
+    };
+  });
+
+  return <Animated.View style={[dotStyle, animatedStyle]} />;
+};
+
 const Onboarding = ({ slides, onDone }) => {
   const scrollX = useSharedValue(0);
 
@@ -23,16 +46,16 @@ const Onboarding = ({ slides, onDone }) => {
     },
     slide: {
       width,
-      padding: 24,
+      padding: 28,
       paddingBottom: 120,
     },
     contentContainer: {
       flex: 1,
-      justifyContent: 'space-between',
+      justifyContent: 'center',
       alignItems: 'center',
     },
     imageContainer: {
-      height: 300,
+      height: 260,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -60,7 +83,7 @@ const Onboarding = ({ slides, onDone }) => {
     },
     indicatorContainer: {
       position: 'absolute',
-      bottom: 80,
+      bottom: 100,
       flexDirection: 'row',
       alignSelf: 'center',
     },
@@ -115,23 +138,9 @@ const Onboarding = ({ slides, onDone }) => {
       </Animated.ScrollView>
 
       <View style={styles.indicatorContainer}>
-        {slides.map((_, i) => {
-          const animatedStyle = useAnimatedStyle(() => {
-            const position = scrollX.value / width;
-            const opacity = interpolate(
-              position,
-              [i - 1, i, i + 1],
-              [0.3, 1, 0.3],
-            );
-            const scale = interpolate(position, [i - 1, i, i + 1], [1, 1.5, 1]);
-            return {
-              opacity,
-              transform: [{ scale }],
-            };
-          });
-
-          return <Animated.View key={i} style={[styles.dot, animatedStyle]} />;
-        })}
+        {slides.map((_, i) => (
+          <Dot key={i} index={i} scrollX={scrollX} dotStyle={styles.dot} />
+        ))}
       </View>
     </View>
   );
