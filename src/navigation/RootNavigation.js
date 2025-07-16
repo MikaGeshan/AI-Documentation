@@ -6,27 +6,7 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import DocumentsScreen from '../screens/DocumentsScreen';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Icon from '../components/Icon';
-
-const Stack = createNativeStackNavigator();
-
-export const RootNavigation = () => {
-  return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="Welcome"
-        component={WelcomeScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="ScreenBottomTabs"
-        component={BottomTabNavigation}
-        options={{ headerShown: false }}
-      />
-    </Stack.Navigator>
-  );
-};
-
-const Tab = createBottomTabNavigator();
+import DocumentViewerScreen from '../screens/DocumentViewerScreen';
 
 const DocumentsHeader = () => {
   return (
@@ -46,11 +26,33 @@ const ChatHeader = () => {
   );
 };
 
+const Stack = createNativeStackNavigator();
+
+export const RootNavigation = () => {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="Welcome"
+        component={WelcomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ScreenBottomTabs"
+        component={BottomTabNavigation}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen name="ViewDocument" component={DocumentViewerScreen} />
+    </Stack.Navigator>
+  );
+};
+
+const Tab = createBottomTabNavigator();
+
 export const BottomTabNavigation = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#4B0082',
+        tabBarActiveTintColor: '#4aa8ea',
         tabBarInactiveTintColor: '#999',
       }}
     >

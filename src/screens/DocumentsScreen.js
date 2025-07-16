@@ -4,15 +4,21 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  View,
   Platform,
   KeyboardAvoidingView,
+  TouchableOpacity,
+  RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Accordion from '../components/Accordion';
+import Icon from '../components/Icon';
+import { useNavigation } from '@react-navigation/native';
 
 const DocumentsScreen = () => {
   const [folders, setFolders] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const navigation = useNavigation();
 
   const formatDocName = name => {
     if (!name) return '(untitled)';
@@ -30,25 +36,31 @@ const DocumentsScreen = () => {
       .join(' ');
   };
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadFolders();
+    setRefreshing(false);
+  };
+
+  const loadFolders = async () => {
+    try {
+      const folderMapStr = await AsyncStorage.getItem('doc-folder-map');
+      if (!folderMapStr) return;
+
+      const folderMap = JSON.parse(folderMapStr);
+      const folderList = Object.entries(folderMap).map(
+        ([folderName, docs]) => ({
+          folderName,
+          docs,
+        }),
+      );
+      setFolders(folderList);
+    } catch (e) {
+      console.error('Error loading folders:', e);
+    }
+  };
+
   useEffect(() => {
-    const loadFolders = async () => {
-      try {
-        const folderMapStr = await AsyncStorage.getItem('doc-folder-map');
-        if (!folderMapStr) return;
-
-        const folderMap = JSON.parse(folderMapStr);
-        const folderList = Object.entries(folderMap).map(
-          ([folderName, docs]) => ({
-            folderName,
-            docs,
-          }),
-        );
-        setFolders(folderList);
-      } catch (e) {
-        console.error('Error loading folders:', e);
-      }
-    };
-
     loadFolders();
   }, []);
 
@@ -59,14 +71,16 @@ const DocumentsScreen = () => {
     scroll: {
       padding: 16,
     },
-    docItem: {
-      paddingVertical: 4,
+    itemContainer: {
+      paddingVertical: 8,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
     },
-    docText: {
+    itemText: {
       fontSize: 14,
       color: '#333',
     },
-    noDoc: {
+    noItemText: {
       fontStyle: 'italic',
       color: '#666',
     },
@@ -78,19 +92,33 @@ const DocumentsScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+        >
           {folders.map(folder => (
             <Accordion key={folder.folderName} title={folder.folderName}>
               {folder.docs.length > 0 ? (
                 folder.docs.map((doc, idx) => (
-                  <View key={idx} style={styles.docItem}>
-                    <Text style={styles.docText}>
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.itemContainer}
+                    onPress={() =>
+                      navigation.navigate('ViewDocument', {
+                        doc,
+                      })
+                    }
+                  >
+                    <Text style={styles.itemText}>
                       {formatDocName(doc.title || doc.name || '(no title)')}
                     </Text>
-                  </View>
+                    <Icon name="Download" size={16} color="#4aa8ea" />
+                  </TouchableOpacity>
                 ))
               ) : (
-                <Text style={styles.noDoc}>(No documents)</Text>
+                <Text style={styles.noItemText}>(No documents)</Text>
               )}
             </Accordion>
           ))}

@@ -138,7 +138,6 @@ export const deepSeekResponse = async (
       return 'Permintaan dibatalkan oleh pengguna.';
     }
     console.error('DeepSeek Response error:', err.message);
-
     return 'Terjadi kesalahan saat memproses permintaan Anda.';
   }
 };
