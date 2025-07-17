@@ -9,35 +9,41 @@ import {
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import WebView from 'react-native-webview';
+
 import {
   downloadPdfToCache,
   fetchConvertedPdfUrl,
 } from '../services/docxProcessToPdf';
 
 const DocumentViewerScreen = () => {
-  const route = useRoute();
-  const { doc } = route.params;
+  const { params } = useRoute();
+  const { doc } = params;
 
   const [pdfPath, setPdfPath] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!doc?.url) {
+      Alert.alert('Error', 'No document URL provided.');
+      setLoading(false);
+      return;
+    }
+
     const loadPdf = async () => {
       try {
         const pdfUrl = await fetchConvertedPdfUrl(doc.url);
         if (!pdfUrl) throw new Error('Failed to fetch PDF URL.');
         console.log('PDF URL:', pdfUrl);
 
-        const localPath = await downloadPdfToCache(
-          pdfUrl,
-          doc.title || 'document',
-        );
+        const title = doc.title?.replace(/[^a-zA-Z0-9-_]/g, '_') || 'document';
+        const localPath = await downloadPdfToCache(pdfUrl, title);
+
         if (!localPath) throw new Error('Failed to download PDF.');
         console.log('PDF downloaded to:', localPath);
 
         setPdfPath(localPath);
       } catch (error) {
-        console.error('loadPdf error:', error);
+        console.error('PDF loading error:', error);
         Alert.alert('Error', error.message || 'Failed to load PDF.');
       } finally {
         setLoading(false);
@@ -46,6 +52,24 @@ const DocumentViewerScreen = () => {
 
     loadPdf();
   }, [doc.url, doc.title]);
+
+  if (loading) {
+    return (
+      <View style={styles.centeredContainer}>
+        <ActivityIndicator size="large" color="#4aa8ea" />
+      </View>
+    );
+  }
+
+  if (!pdfPath) {
+    return (
+      <View style={styles.centeredContainer}>
+        <Text style={styles.errorText}>Unable to display PDF.</Text>
+      </View>
+    );
+  }
+
+  console.log('Rendering PDF at:', pdfPath);
 
   const styles = StyleSheet.create({
     container: {
@@ -65,24 +89,6 @@ const DocumentViewerScreen = () => {
       width: Dimensions.get('window').width,
     },
   });
-
-  if (loading) {
-    return (
-      <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" color="#4aa8ea" />
-      </View>
-    );
-  }
-
-  if (!pdfPath) {
-    return (
-      <View style={styles.centeredContainer}>
-        <Text style={styles.errorText}>Unable to display PDF.</Text>
-      </View>
-    );
-  }
-
-  console.log('Rendering PDF at:', pdfPath);
 
   return (
     <View style={styles.container}>
