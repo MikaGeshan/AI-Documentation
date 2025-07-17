@@ -22,6 +22,25 @@ const DocumentViewerScreen = () => {
   const [pdfPath, setPdfPath] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    centeredContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    errorText: {
+      fontSize: 16,
+      color: 'red',
+    },
+    pdf: {
+      flex: 1,
+      width: Dimensions.get('window').width,
+    },
+  });
+
   useEffect(() => {
     if (!doc?.url) {
       Alert.alert('Error', 'No document URL provided.');
@@ -71,25 +90,6 @@ const DocumentViewerScreen = () => {
 
   console.log('Rendering PDF at:', pdfPath);
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-    },
-    centeredContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    errorText: {
-      fontSize: 16,
-      color: 'red',
-    },
-    pdf: {
-      flex: 1,
-      width: Dimensions.get('window').width,
-    },
-  });
-
   return (
     <View style={styles.container}>
       <WebView
@@ -97,6 +97,12 @@ const DocumentViewerScreen = () => {
         source={{ uri: `file://${pdfPath}` }}
         useWebKit
         style={styles.pdf}
+        scalesPageToFit={true}
+        javaScriptEnabled={true}
+        allowFileAccess={true}
+        domStorageEnabled={true}
+        startInLoadingState={true}
+        allowsInlineMediaPlayback={true}
         onLoad={() => console.log('PDF loaded in WebView')}
         onError={({ nativeEvent }) =>
           Alert.alert('WebView Error', nativeEvent.description)

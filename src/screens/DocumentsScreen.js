@@ -8,27 +8,29 @@ import {
   KeyboardAvoidingView,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
+  View,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Accordion from '../components/Accordion';
 import Icon from '../components/Icon';
 import { useNavigation } from '@react-navigation/native';
+import { preloadAllDocuments } from '../services/documentCacheManager';
 
 const DocumentsScreen = () => {
   const [folders, setFolders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const navigation = useNavigation();
 
   const formatDocName = name => {
     if (!name) return '(untitled)';
-
     const cleanedName = name
       .replace(/\.[^/.]+$/, '')
       .replace(/[-_]/g, ' ')
       .replace(/\(Converted\)/gi, '')
       .trim();
-
     return cleanedName
       .split(' ')
       .filter(word => word.length > 0)
@@ -46,7 +48,6 @@ const DocumentsScreen = () => {
     try {
       const folderMapStr = await AsyncStorage.getItem('doc-folder-map');
       if (!folderMapStr) return;
-
       const folderMap = JSON.parse(folderMapStr);
       const folderList = Object.entries(folderMap).map(
         ([folderName, docs]) => ({
@@ -61,7 +62,17 @@ const DocumentsScreen = () => {
   };
 
   useEffect(() => {
-    loadFolders();
+    const load = async () => {
+      try {
+        await preloadAllDocuments(); // ⬅️ jalankan preloading di sini
+        await loadFolders(); // ⬅️ baru load dari AsyncStorage
+      } catch (e) {
+        console.error('Failed to preload:', e);
+      } finally {
+        setLoading(false); // ⬅️ selesai loading
+      }
+    };
+    load();
   }, []);
 
   const styles = StyleSheet.create({
@@ -84,7 +95,23 @@ const DocumentsScreen = () => {
       fontStyle: 'italic',
       color: '#666',
     },
+    loaderContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
   });
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#4aa8ea" />
+          <Text>Loading documents...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
