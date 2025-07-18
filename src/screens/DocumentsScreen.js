@@ -10,17 +10,25 @@ import {
   RefreshControl,
   ActivityIndicator,
   View,
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Accordion from '../components/Accordion';
 import Icon from '../components/Icon';
 import { useNavigation } from '@react-navigation/native';
 import { preloadAllDocuments } from '../services/documentCacheManager';
+import Option from '../components/Option';
+import RNFS from 'react-native-fs';
+import FileViewer from 'react-native-file-viewer';
+import { requestAndroidPermission } from '../utils/requestPermission';
+import { fetchConvertedPdfUrl } from '../services/docxProcessToPdf';
 
 const DocumentsScreen = () => {
   const [folders, setFolders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showOption, setShowOption] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState(null);
 
   const navigation = useNavigation();
 
@@ -64,16 +72,90 @@ const DocumentsScreen = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        await preloadAllDocuments(); // ⬅️ jalankan preloading di sini
-        await loadFolders(); // ⬅️ baru load dari AsyncStorage
+        await preloadAllDocuments();
+        await loadFolders();
       } catch (e) {
         console.error('Failed to preload:', e);
       } finally {
-        setLoading(false); // ⬅️ selesai loading
+        setLoading(false);
       }
     };
     load();
   }, []);
+
+  const viewDocument = () => {
+    if (!selectedDoc) return;
+    setShowOption(false);
+    navigation.navigate('ViewDocument', { doc: selectedDoc });
+  };
+
+  const openDownloadedFile = async filePath => {
+    try {
+      const exists = await RNFS.exists(filePath);
+      if (!exists) {
+        Alert.alert('File Not Found', 'File does not exist at the given path.');
+        return;
+      }
+
+      await FileViewer.open(filePath, {
+        showOpenWithDialog: true,
+      });
+    } catch (e) {
+      console.error('File open error:', e);
+      Alert.alert('Error', 'Unable to open the file.');
+    }
+  };
+
+  const downloadDocument = async (docUrl, fileName) => {
+    console.log('Doc URL:', docUrl);
+
+    const path =
+      Platform.OS === 'android'
+        ? `${RNFS.DownloadDirectoryPath}/${fileName}.pdf`
+        : `${RNFS.DocumentDirectoryPath}/${fileName}.pdf`;
+
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await requestAndroidPermission();
+        if (!granted) {
+          Alert.alert('Permission denied', 'Cannot access storage.');
+          return;
+        }
+      }
+
+      const fileUrl = await fetchConvertedPdfUrl(docUrl);
+
+      if (!fileUrl) {
+        Alert.alert('Download Failed', 'PDF URL not found.');
+        return;
+      }
+
+      const res = await RNFS.downloadFile({
+        fromUrl: fileUrl,
+        toFile: path,
+      }).promise;
+
+      if (res.statusCode === 200) {
+        Alert.alert(
+          'Download Complete',
+          `File saved to:\n${path}`,
+          [
+            { text: 'OK' },
+            {
+              text: 'Open',
+              onPress: () => openDownloadedFile(path),
+            },
+          ],
+          { cancelable: true },
+        );
+      } else {
+        Alert.alert('Download Failed', `Status code: ${res.statusCode}`);
+      }
+    } catch (err) {
+      console.error('Download error:', err);
+      Alert.alert('Error', 'Failed to download file.');
+    }
+  };
 
   const styles = StyleSheet.create({
     container: {
@@ -132,16 +214,17 @@ const DocumentsScreen = () => {
                   <TouchableOpacity
                     key={idx}
                     style={styles.itemContainer}
-                    onPress={() =>
-                      navigation.navigate('ViewDocument', {
-                        doc,
-                      })
-                    }
+                    onPress={() => {
+                      setSelectedDoc(doc);
+                      setTimeout(() => {
+                        setShowOption(true);
+                      }, 100);
+                    }}
                   >
                     <Text style={styles.itemText}>
                       {formatDocName(doc.title || doc.name || '(no title)')}
                     </Text>
-                    <Icon name="Download" size={16} color="#4aa8ea" />
+                    <Icon name="Ellipsis" size={16} color="#4aa8ea" />
                   </TouchableOpacity>
                 ))
               ) : (
@@ -150,6 +233,23 @@ const DocumentsScreen = () => {
             </Accordion>
           ))}
         </ScrollView>
+        <Option
+          visible={showOption}
+          onClose={() => setShowOption(false)}
+          title="Choose Options Below"
+          message={`What do you want to do with "${formatDocName(
+            selectedDoc?.title || selectedDoc?.name,
+          )}"?`}
+          option1Text="Open"
+          option2Text="Download"
+          onOption1={viewDocument}
+          onOption2={() => {
+            const docUrl = selectedDoc.url;
+            const fileName = selectedDoc.title || 'untitled';
+
+            downloadDocument(docUrl, fileName);
+          }}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

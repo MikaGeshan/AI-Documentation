@@ -5,11 +5,11 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import Icon from './Icon'; // asumsi path Icon kamu
+import Icon from './Icon';
 
 const Accordion = ({ title, children }) => {
   const [contentHeight, setContentHeight] = useState(0);
-  const [expanded, setExpanded] = useState(false); // lokal state untuk ikon
+  const [expanded, setExpanded] = useState(false);
   const isExpanded = useSharedValue(false);
   const height = useSharedValue(0);
 
@@ -32,6 +32,33 @@ const Accordion = ({ title, children }) => {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      borderBottomWidth: 1,
+      borderColor: '#ccc',
+      marginBottom: 10,
+    },
+    header: {
+      padding: 16,
+      backgroundColor: '#f0f0f0',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
+    contentWrapper: {
+      padding: 16,
+      backgroundColor: '#fff',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+    },
+  });
+
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={toggleAccordion} style={styles.header}>
@@ -51,32 +78,5 @@ const Accordion = ({ title, children }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    borderBottomWidth: 1,
-    borderColor: '#ccc',
-    marginBottom: 10,
-  },
-  header: {
-    padding: 16,
-    backgroundColor: '#f0f0f0',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  contentWrapper: {
-    padding: 16,
-    backgroundColor: '#fff',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-});
 
 export default Accordion;

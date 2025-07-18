@@ -60,7 +60,11 @@ export const RootNavigation = () => {
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
       )}
       <Stack.Screen name="ScreenBottomTabs" component={BottomTabNavigation} />
-      <Stack.Screen name="ViewDocument" component={DocumentViewerScreen} />
+      <Stack.Screen
+        name="ViewDocument"
+        component={DocumentViewerScreen}
+        options={{ headerShown: true }}
+      />
     </Stack.Navigator>
   );
 };
