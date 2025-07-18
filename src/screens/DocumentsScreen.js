@@ -34,6 +34,7 @@ const DocumentsScreen = () => {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [expandedFolder, setExpandedFolder] = useState(null);
 
   const navigation = useNavigation();
 
@@ -168,7 +169,16 @@ const DocumentsScreen = () => {
 
   const renderFolders = () =>
     folders.map(folder => (
-      <Accordion key={folder.folderName} title={folder.folderName}>
+      <Accordion
+        key={folder.folderName}
+        title={folder.folderName}
+        isExpanded={expandedFolder === folder.folderName}
+        onToggle={() =>
+          setExpandedFolder(prev =>
+            prev === folder.folderName ? null : folder.folderName,
+          )
+        }
+      >
         {folder.docs.length > 0 ? (
           folder.docs.map((doc, idx) => (
             <TouchableOpacity
@@ -234,12 +244,15 @@ const DocumentsScreen = () => {
           option2Text="Download"
           onOption1={() => {
             setShowOption(false);
+            setSelectedDoc(null);
             navigation.navigate('ViewDocument', { doc: selectedDoc });
           }}
           onOption2={() => {
             const docUrl = selectedDoc.url;
             const fileName = selectedDoc.title || 'untitled';
             downloadFile(docUrl, fileName);
+            setShowOption(false);
+            setSelectedDoc(null);
           }}
         />
       </KeyboardAvoidingView>

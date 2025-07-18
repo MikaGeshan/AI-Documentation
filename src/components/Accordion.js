@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { use, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -7,22 +7,23 @@ import Animated, {
 } from 'react-native-reanimated';
 import Icon from './Icon';
 
-const Accordion = ({ title, children }) => {
+const Accordion = ({ title, children, isExpanded, onToggle }) => {
   const [contentHeight, setContentHeight] = useState(0);
-  const [expanded, setExpanded] = useState(false);
-  const isExpanded = useSharedValue(false);
-  const height = useSharedValue(0);
+  const expandedShared = useSharedValue(isExpanded);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    height: withTiming(height.value, { duration: 300 }),
+    height: withTiming(expandedShared.value ? contentHeight : 0, {
+      duration: 300,
+    }),
     overflow: 'hidden',
   }));
 
+  useEffect(() => {
+    expandedShared.value = isExpanded;
+  }, [isExpanded, expandedShared]);
+
   const toggleAccordion = () => {
-    const newExpanded = !expanded;
-    setExpanded(newExpanded);
-    isExpanded.value = newExpanded;
-    height.value = newExpanded ? contentHeight : 0;
+    onToggle();
   };
 
   const onLayoutContent = event => {
@@ -64,7 +65,7 @@ const Accordion = ({ title, children }) => {
       <TouchableOpacity onPress={toggleAccordion} style={styles.header}>
         <Text style={styles.title}>{title}</Text>
         <Icon
-          name={expanded ? 'ChevronUp' : 'ChevronDown'}
+          name={isExpanded ? 'ChevronUp' : 'ChevronDown'}
           color="#333"
           size={20}
         />
