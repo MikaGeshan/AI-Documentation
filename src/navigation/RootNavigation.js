@@ -4,12 +4,14 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import WelcomeScreen from '../screens/WelcomeScreen';
-import DocumentsScreen from '../screens/DocumentsScreen';
-import ChatScreen from '../screens/ChatScreen';
-import DocumentViewerScreen from '../screens/DocumentViewerScreen';
+import DocumentsScreen from '../screens/Main/DocumentsScreen';
+import ChatScreen from '../screens/Main/ChatScreen';
+import DocumentViewerScreen from '../screens/Main/DocumentViewerScreen';
 
 import Header from '../components/Header';
 import Icon from '../components/Icon';
+import LoginScreen from '../screens/Auth/LoginScreen';
+import RegisterScreen from '../screens/Auth/RegisterScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -59,6 +61,16 @@ export const RootNavigation = () => {
       {isFirstLaunch && (
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
       )}
+      <Stack.Screen
+        name="Login"
+        component={LoginScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Register"
+        component={RegisterScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="ScreenBottomTabs" component={BottomTabNavigation} />
       <Stack.Screen
         name="ViewDocument"

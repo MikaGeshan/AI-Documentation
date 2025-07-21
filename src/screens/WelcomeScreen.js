@@ -53,7 +53,7 @@ const WelcomeScreen = () => {
       <KeyboardAvoidingView style={styles.container}>
         <Onboarding
           slides={slides}
-          onDone={() => navigation.replace('ScreenBottomTabs')}
+          onDone={() => navigation.replace('Register')}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

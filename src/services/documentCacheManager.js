@@ -30,6 +30,11 @@ export const getCachedDocument = async fileId => {
   return isCacheValid(parsed) ? parsed : null;
 };
 
+const filterFolderName = (folderPath = '') => {
+  const parts = folderPath.split('/');
+  return parts[parts.length - 1];
+};
+
 export const preloadAllDocuments = async () => {
   console.log('Preloading Documents...');
   const documents = await getFolderContents();
@@ -56,7 +61,7 @@ export const preloadAllDocuments = async () => {
           title: result.title || doc.name,
           content: result.content,
           url: result.url || doc.downloadUrl,
-          folder: doc.folder || 'Lainnya',
+          folder: filterFolderName(doc.folder) || 'Other',
         };
         await cacheDocument(fileId, docData);
         console.log(`Cache saved: ${doc.name}`);
@@ -66,7 +71,7 @@ export const preloadAllDocuments = async () => {
       }
     }
 
-    const folder = docData.folder || 'Lainnya';
+    const folder = docData.folder || 'Other';
     if (!grouped[folder]) grouped[folder] = [];
     grouped[folder].push(docData);
   }

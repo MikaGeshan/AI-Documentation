@@ -10,7 +10,7 @@ export const getFolderContents = async () => {
     const url = `${GOOGLE_JSON_SCRIPT}?folderId=${FOLDER_ID}`;
     console.log('Fetching folder contents from:', url);
     const response = await axios.get(url);
-
+    console.log('Received response:', response.data);
     const files = response.data;
 
     const mapped = files.map(file => {

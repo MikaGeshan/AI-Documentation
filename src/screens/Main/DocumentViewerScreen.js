@@ -13,7 +13,7 @@ import WebView from 'react-native-webview';
 import {
   downloadPdfToCache,
   fetchConvertedPdfUrl,
-} from '../services/docxProcessToPdf';
+} from '../../services/docxProcessToPdf';
 
 const DocumentViewerScreen = () => {
   const { params } = useRoute();

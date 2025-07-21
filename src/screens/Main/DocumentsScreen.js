@@ -16,14 +16,14 @@ import RNFS from 'react-native-fs';
 import FileViewer from 'react-native-file-viewer';
 import { useNavigation } from '@react-navigation/native';
 
-import Accordion from '../components/Accordion';
-import Icon from '../components/Icon';
-import Option from '../components/Option';
-import ProgressBar from '../components/ProgressBar';
+import Accordion from '../../components/Accordion';
+import Icon from '../../components/Icon';
+import Option from '../../components/Option';
+import ProgressBar from '../../components/ProgressBar';
 
-import { preloadAllDocuments } from '../services/documentCacheManager';
-import { requestAndroidPermission } from '../utils/requestPermission';
-import { fetchConvertedPdfUrl } from '../services/docxProcessToPdf';
+import { preloadAllDocuments } from '../../services/documentCacheManager';
+import { requestAndroidPermission } from '../../utils/requestPermission';
+import { fetchConvertedPdfUrl } from '../../services/docxProcessToPdf';
 
 const DocumentsScreen = () => {
   const [folders, setFolders] = useState([]);
