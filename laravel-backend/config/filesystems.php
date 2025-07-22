@@ -60,6 +60,12 @@ return [
             'report' => false,
         ],
 
+        // 'google'=> [
+        //     'driver' => 'google',
+        //     'path' => env ('GOOGLE_DRIVE_KEY_PATH'),
+        //     'folder' => env('GOOGLE_DRIVE_FOLDER_ID'),
+        // ]
+
     ],
 
     /*

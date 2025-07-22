@@ -16,53 +16,101 @@ import Button from '../../components/Buttons/Button';
 import { API_URL } from '@env';
 import Hyperlink from '../../components/Others/Hyperlink';
 import Icon from '../../components/Icons/Icon';
+import SuccessAlert from '../../components/Alerts/SuccessAlert';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [nameError, setNameError] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+
+  const [errors, setErrors] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const updateFormData = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const isValidEmail = email => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const isValidPassword = password => {
+    return password.length >= 8;
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    let isValid = true;
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+      isValid = false;
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+      isValid = false;
+    } else if (!isValidEmail(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+      isValid = false;
+    } else if (!isValidPassword(formData.password)) {
+      newErrors.password = 'Password must be at least 6 characters long';
+      isValid = false;
+    }
+
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+      isValid = false;
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSuccessfulRegistration = () => {
+    setShowSuccessAlert(true);
+    setTimeout(() => {
+      setShowSuccessAlert(false);
+      navigation.replace('ScreenBottomTabs');
+    }, 3000);
+  };
+
+  const handleRegistrationError = data => {
+    const errorMessage =
+      data?.message || 'Registration failed. Please try again.';
+    Alert.alert('Registration Failed', errorMessage);
+  };
 
   const handleRegister = async () => {
-    let valid = true;
-    setNameError('');
-    setEmailError('');
-    setPasswordError('');
-    setConfirmPasswordError('');
+    if (!validateForm()) return;
 
-    if (!name) {
-      setNameError('Name is required');
-      valid = false;
-    }
-
-    if (!email) {
-      setEmailError('Email is required');
-      valid = false;
-    }
-
-    if (!password) {
-      setPasswordError('Password is required');
-      valid = false;
-    }
-
-    if (!confirmPassword) {
-      setConfirmPasswordError('Please confirm your password');
-      valid = false;
-    } else if (password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match');
-      valid = false;
-    }
-
-    if (!valid) return;
+    setIsLoading(true);
 
     try {
       const response = await fetch(`${API_URL}/api/register`, {
@@ -71,20 +119,33 @@ const RegisterScreen = () => {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+        }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        navigation.replace('ScreenBottomTabs');
+        handleSuccessfulRegistration();
       } else {
-        Alert.alert('Registration Failed', data.message || 'Unknown error');
+        handleRegistrationError(data);
       }
     } catch (error) {
       console.error('Register error:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again later.');
+      Alert.alert(
+        'Error',
+        'Network error. Please check your connection and try again.',
+      );
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const signInLink = () => {
+    navigation.navigate('Login');
   };
 
   const styles = StyleSheet.create({
@@ -98,102 +159,165 @@ const RegisterScreen = () => {
     scrollContainer: {
       flex: 1,
     },
+    scrollContent: {
+      flexGrow: 1,
+    },
+    alertContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 1000,
+    },
     formContainer: {
       flex: 1,
-      padding: 16,
-      justifyContent: 'center',
-      alignItems: 'center',
-      gap: 20,
+      paddingHorizontal: 20,
+      paddingTop: Platform.select({
+        ios: 60,
+        android: 40,
+      }),
+      paddingBottom: 20,
     },
     title: {
-      fontSize: 24,
+      fontSize: 28,
       fontWeight: 'bold',
       marginBottom: 8,
       textAlign: 'center',
+      color: '#1F2937',
+    },
+    subtitle: {
+      fontSize: 16,
+      color: '#6B7280',
+      textAlign: 'center',
+      marginBottom: 32,
     },
     inputGroup: {
       width: '100%',
-      marginBottom: 12,
+      marginBottom: 20,
     },
     label: {
-      marginBottom: 6,
-      fontSize: 14,
-      fontWeight: '500',
+      marginBottom: 8,
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#374151',
     },
     textInput: {
       borderWidth: 1,
-      borderColor: '#E6E4E2',
-      borderRadius: 8,
+      borderColor: '#E5E7EB',
+      borderRadius: 12,
+      fontSize: 16,
+      backgroundColor: '#F9FAFB',
     },
     inputError: {
-      borderColor: 'red',
+      borderColor: '#EF4444',
+      backgroundColor: '#FEF2F2',
     },
-    signInContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 8,
-    },
-    signInText: {
+    errorText: {
+      marginTop: 6,
+      color: '#EF4444',
       fontSize: 14,
-      marginRight: 4,
+      fontWeight: '500',
     },
     passwordContainer: {
       position: 'relative',
     },
     eyeIconContainer: {
       position: 'absolute',
-      right: 12,
+      right: 16,
       top: 16,
       zIndex: 1,
+      padding: 4,
+    },
+    signInContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 24,
+    },
+    signInText: {
+      fontSize: 16,
+      marginRight: 6,
+      color: '#6B7280',
     },
   });
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {showSuccessAlert && (
+        <View style={styles.alertContainer}>
+          <SuccessAlert
+            message="Account created successfully!"
+            onHide={() => setShowSuccessAlert(false)}
+          />
+        </View>
+      )}
+
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <ScrollView style={styles.scrollContainer}>
+        <ScrollView
+          style={styles.scrollContainer}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.formContainer}>
             <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Sign up to get started</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Name</Text>
+              <Text style={styles.label}>Full Name</Text>
               <InputText
-                placeholder="Enter Your Name"
-                value={name}
-                onChangeText={setName}
-                style={[styles.textInput, nameError && styles.inputError]}
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChangeText={value => updateFormData('name', value)}
+                style={[styles.textInput, errors.name && styles.inputError]}
+                autoCapitalize="words"
+                returnKeyType="next"
               />
+              {errors.name ? (
+                <Text style={styles.errorText}>{errors.name}</Text>
+              ) : null}
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Email Address</Text>
               <InputText
-                placeholder="Enter Your Email"
-                value={email}
+                placeholder="Enter your email"
+                value={formData.email}
+                onChangeText={value => updateFormData('email', value)}
+                style={[styles.textInput, errors.email && styles.inputError]}
                 autoCapitalize="none"
-                onChangeText={setEmail}
-                style={[styles.textInput, emailError && styles.inputError]}
+                keyboardType="email-address"
+                returnKeyType="next"
               />
+              {errors.email ? (
+                <Text style={styles.errorText}>{errors.email}</Text>
+              ) : null}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.passwordContainer}>
                 <InputText
-                  placeholder="Enter Your Password"
+                  placeholder="Enter your password"
                   secureTextEntry={!showPassword}
-                  value={password}
-                  onChangeText={setPassword}
+                  value={formData.password}
+                  onChangeText={value => updateFormData('password', value)}
+                  style={[
+                    styles.textInput,
+                    errors.password && styles.inputError,
+                  ]}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  style={[styles.textInput, passwordError && styles.inputError]}
+                  returnKeyType="next"
                 />
                 <TouchableOpacity
                   style={styles.eyeIconContainer}
                   onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.7}
                 >
                   <Icon
                     name={showPassword ? 'Eye' : 'EyeOff'}
@@ -202,26 +326,34 @@ const RegisterScreen = () => {
                   />
                 </TouchableOpacity>
               </View>
+              {errors.password ? (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              ) : null}
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Confirm Password</Text>
               <View style={styles.passwordContainer}>
                 <InputText
-                  placeholder="Confirm Password"
+                  placeholder="Confirm your password"
                   secureTextEntry={!showConfirmPassword}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  autoCapitalize="none"
-                  autoCorrect={false}
+                  value={formData.confirmPassword}
+                  onChangeText={value =>
+                    updateFormData('confirmPassword', value)
+                  }
                   style={[
                     styles.textInput,
-                    confirmPasswordError && styles.inputError,
+                    errors.confirmPassword && styles.inputError,
                   ]}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={handleRegister}
                 />
                 <TouchableOpacity
                   style={styles.eyeIconContainer}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  activeOpacity={0.7}
                 >
                   <Icon
                     name={showConfirmPassword ? 'Eye' : 'EyeOff'}
@@ -230,15 +362,20 @@ const RegisterScreen = () => {
                   />
                 </TouchableOpacity>
               </View>
+              {errors.confirmPassword ? (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              ) : null}
             </View>
 
-            <Button text="Create New Account" onPress={handleRegister} />
+            <Button
+              text={isLoading ? 'Creating Account...' : 'Create Account'}
+              onPress={handleRegister}
+              disabled={isLoading}
+            />
+
             <View style={styles.signInContainer}>
               <Text style={styles.signInText}>Already have an account?</Text>
-              <Hyperlink
-                text="Sign In Now!"
-                onPress={() => navigation.navigate('Login')}
-              />
+              <Hyperlink text="Sign In" onPress={signInLink} />
             </View>
           </View>
         </ScrollView>

@@ -8,6 +8,7 @@ import {
   View,
   Platform,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { API_URL } from '@env';
@@ -21,40 +22,90 @@ import SuccessAlert from '../../components/Alerts/SuccessAlert';
 const LoginScreen = () => {
   const navigation = useNavigation();
 
-  const [emailOrName, setEmailOrName] = useState('');
-  const [password, setPassword] = useState('');
-  const [emailOrNameError, setEmailOrNameError] = useState(false);
-  const [passwordError, setPasswordError] = useState(false);
+  const [formData, setFormData] = useState({
+    emailOrName: '',
+    password: '',
+  });
+
+  const [errors, setErrors] = useState({
+    emailOrName: '',
+    password: '',
+  });
+
   const [showPassword, setShowPassword] = useState(false);
-
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async () => {
-    const isEmailOrNameEmpty = !emailOrName.trim();
-    const isPasswordEmpty = !password.trim();
+  const updateFormData = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
 
-    setEmailOrNameError(false);
-    setPasswordError(false);
+  const isValidEmail = email => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
-    if (isEmailOrNameEmpty || isPasswordEmpty) {
-      if (isEmailOrNameEmpty) setEmailOrNameError(true);
-      if (isPasswordEmpty) setPasswordError(true);
+  const validateForm = () => {
+    const newErrors = {};
+    let isValid = true;
 
-      Alert.alert(
-        'Validation Error',
-        'Please enter Email or Username, and Password',
-      );
-      return;
+    if (!formData.emailOrName.trim()) {
+      newErrors.emailOrName = 'Email or username is required';
+      isValid = false;
     }
 
-    const payload = {
-      password,
-      ...(emailOrName.includes('@')
-        ? { email: emailOrName }
-        : { name: emailOrName }),
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const createLoginPayload = () => {
+    const trimmedInput = formData.emailOrName.trim();
+    return {
+      password: formData.password,
+      ...(isValidEmail(trimmedInput)
+        ? { email: trimmedInput.toLowerCase() }
+        : { name: trimmedInput }),
     };
+  };
+
+  const handleSuccessfulLogin = () => {
+    setShowSuccessAlert(true);
+    setErrors({ emailOrName: '', password: '' });
+
+    setTimeout(() => {
+      setShowSuccessAlert(false);
+      navigation.replace('ScreenBottomTabs');
+    }, 2000);
+  };
+
+  const handleLoginError = data => {
+    const errorMessage =
+      data?.message || 'Invalid credentials. Please try again.';
+
+    setErrors({
+      emailOrName: 'Please check your credentials',
+      password: 'Please check your credentials',
+    });
+
+    Alert.alert('Login Failed', errorMessage);
+  };
+
+  const handleLogin = async () => {
+    if (!validateForm()) return;
+
+    setIsLoading(true);
 
     try {
+      const payload = createLoginPayload();
+
       const response = await fetch(`${API_URL}/api/login`, {
         method: 'POST',
         headers: {
@@ -67,23 +118,30 @@ const LoginScreen = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setShowSuccessAlert(true);
-        setEmailOrNameError(false);
-        setPasswordError(false);
-
-        setTimeout(() => {
-          setShowSuccessAlert(false);
-          navigation.replace('ScreenBottomTabs');
-        }, 3000);
+        handleSuccessfulLogin();
       } else {
-        setEmailOrNameError(true);
-        setPasswordError(true);
-        Alert.alert('Login Failed', data.message || 'Invalid credentials');
+        handleLoginError(data);
       }
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again later.');
+      Alert.alert(
+        'Connection Error',
+        'Unable to connect to server. Please check your internet connection and try again.',
+      );
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const registerLink = () => {
+    navigation.navigate('Register');
+  };
+
+  const handleForgotPassword = () => {
+    Alert.alert(
+      'Forgot Password',
+      'This feature will be available soon. Please contact support if you need help.',
+    );
   };
 
   const styles = StyleSheet.create({
@@ -94,70 +152,99 @@ const LoginScreen = () => {
     keyboardContainer: {
       flex: 1,
     },
-    formContainer: {
+    scrollContainer: {
       flex: 1,
-      padding: 16,
+    },
+    scrollContent: {
+      flexGrow: 1,
       justifyContent: 'center',
-      alignItems: 'center',
-      gap: 20,
     },
     alertContainer: {
       position: 'absolute',
-      top: 16,
+      top: 0,
       left: 0,
       right: 0,
-      zIndex: 999,
-      alignItems: 'flex-end',
-      paddingHorizontal: 16,
+      zIndex: 1000,
+    },
+    formContainer: {
+      flex: 1,
+      paddingHorizontal: 20,
+      paddingVertical: 40,
+      justifyContent: 'center',
+      minHeight: '100%',
+    },
+    headerContainer: {
+      alignItems: 'center',
+      marginBottom: 40,
     },
     title: {
-      fontSize: 24,
+      fontSize: 32,
       fontWeight: 'bold',
       marginBottom: 8,
+      textAlign: 'center',
+      color: '#1F2937',
+    },
+    subtitle: {
+      fontSize: 18,
+      color: '#6B7280',
       textAlign: 'center',
     },
     inputGroup: {
       width: '100%',
-      marginBottom: 12,
+      marginBottom: 20,
     },
     label: {
-      marginBottom: 6,
-      fontSize: 14,
-      fontWeight: '500',
+      marginBottom: 8,
+      fontSize: 16,
+      fontWeight: '600',
+      color: '#374151',
     },
     textInput: {
       borderWidth: 1,
-      borderColor: '#E6E4E2',
-      borderRadius: 8,
+      borderColor: '#E5E7EB',
+      borderRadius: 12,
+      fontSize: 16,
+      backgroundColor: '#F9FAFB',
+      paddingHorizontal: 16,
+      paddingVertical: 16,
     },
     inputError: {
-      borderColor: 'red',
+      borderColor: '#EF4444',
+      backgroundColor: '#FEF2F2',
     },
     errorText: {
-      marginTop: 4,
-      color: 'red',
-      fontSize: 12,
-    },
-    hyperlinkContainer: {
-      alignItems: 'center',
-    },
-    signUpContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: 8,
-    },
-    signUpText: {
+      marginTop: 6,
+      color: '#EF4444',
       fontSize: 14,
-      marginRight: 4,
+      fontWeight: '500',
     },
     passwordContainer: {
       position: 'relative',
     },
     eyeIconContainer: {
       position: 'absolute',
-      right: 12,
+      right: 16,
       top: 16,
       zIndex: 1,
+      padding: 4,
+    },
+    forgotPasswordContainer: {
+      alignItems: 'flex-end',
+      marginBottom: 24,
+    },
+    signUpContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginTop: 24,
+      paddingTop: 20,
+      borderTopWidth: 1,
+      borderTopColor: '#E5E7EB',
+    },
+    signUpText: {
+      fontSize: 16,
+      marginRight: 6,
+      color: '#6B7280',
     },
   });
 
@@ -166,85 +253,103 @@ const LoginScreen = () => {
       {showSuccessAlert && (
         <View style={styles.alertContainer}>
           <SuccessAlert
-            message="Successfully Logged In"
+            message="Welcome back!"
             onHide={() => setShowSuccessAlert(false)}
           />
         </View>
       )}
+
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={styles.formContainer}>
-          <Text style={styles.title}>Let's Sign you in</Text>
+        <ScrollView
+          style={styles.scrollContainer}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.formContainer}>
+            <View style={styles.headerContainer}>
+              <Text style={styles.title}>Welcome Back</Text>
+              <Text style={styles.subtitle}>Sign in to continue</Text>
+            </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email address or Username</Text>
-            <InputText
-              placeholder="Enter Your Email or Username"
-              autoCapitalize="none"
-              autoCorrect={false}
-              value={emailOrName}
-              onChangeText={text => {
-                setEmailOrName(text);
-                setEmailOrNameError(false);
-              }}
-              style={[styles.textInput, emailOrNameError && styles.inputError]}
-            />
-            {emailOrNameError && (
-              <Text style={styles.errorText}>
-                Email or Username is required
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
+            {/* Email or Username Input */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email or Username</Text>
               <InputText
-                placeholder="Enter Your Password"
-                secureTextEntry={!showPassword}
+                placeholder="Enter your email or username"
                 autoCapitalize="none"
                 autoCorrect={false}
-                value={password}
-                onChangeText={text => {
-                  setPassword(text);
-                  setPasswordError(false);
-                }}
-                style={[styles.textInput, passwordError && styles.inputError]}
+                value={formData.emailOrName}
+                onChangeText={value => updateFormData('emailOrName', value)}
+                style={[
+                  styles.textInput,
+                  errors.emailOrName && styles.inputError,
+                ]}
+                returnKeyType="next"
+                keyboardType="email-address"
               />
-              <TouchableOpacity
-                style={styles.eyeIconContainer}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Icon
-                  name={showPassword ? 'Eye' : 'EyeOff'}
-                  size={20}
-                  color="#666"
-                />
-              </TouchableOpacity>
+              {errors.emailOrName ? (
+                <Text style={styles.errorText}>{errors.emailOrName}</Text>
+              ) : null}
             </View>
-            {passwordError && (
-              <Text style={styles.errorText}>Password is required</Text>
-            )}
-          </View>
 
-          <Button text="Sign In" onPress={handleLogin} />
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordContainer}>
+                <InputText
+                  placeholder="Enter your password"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={formData.password}
+                  onChangeText={value => updateFormData('password', value)}
+                  style={[
+                    styles.textInput,
+                    errors.password && styles.inputError,
+                  ]}
+                  returnKeyType="done"
+                  onSubmitEditing={handleLogin}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIconContainer}
+                  onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.7}
+                >
+                  <Icon
+                    name={showPassword ? 'Eye' : 'EyeOff'}
+                    size={20}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.password ? (
+                <Text style={styles.errorText}>{errors.password}</Text>
+              ) : null}
+            </View>
 
-          <View style={styles.hyperlinkContainer}>
-            <Hyperlink
-              text="Forgot Password?"
-              onPress={() => console.log('Pressed')}
+            <View style={styles.forgotPasswordContainer}>
+              <Hyperlink
+                text="Forgot Password?"
+                onPress={handleForgotPassword}
+              />
+            </View>
+
+            <Button
+              text={isLoading ? 'Signing In...' : 'Sign In'}
+              onPress={handleLogin}
+              disabled={isLoading}
             />
+
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>
-              <Hyperlink
-                text="Sign Up"
-                onPress={() => navigation.navigate('Register')}
-              />
+              <Hyperlink text="Sign Up" onPress={registerLink} />
             </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

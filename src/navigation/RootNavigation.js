@@ -81,6 +81,14 @@ export const RootNavigation = () => {
   );
 };
 
+const DocumentsTabIcon = ({ color, size }) => (
+  <Icon name="FileText" color={color} size={size} />
+);
+
+const ChatTabIcon = ({ color, size }) => (
+  <Icon name="MessageCircle" color={color} size={size} />
+);
+
 const BottomTabNavigation = () => (
   <Tab.Navigator
     screenOptions={{
@@ -93,9 +101,7 @@ const BottomTabNavigation = () => (
       component={DocumentsScreen}
       options={{
         header: DocumentsHeader,
-        tabBarIcon: ({ color, size }) => (
-          <Icon name="FileText" color={color} size={size} />
-        ),
+        tabBarIcon: DocumentsTabIcon,
       }}
     />
     <Tab.Screen
@@ -103,9 +109,7 @@ const BottomTabNavigation = () => (
       component={ChatScreen}
       options={{
         header: ChatHeader,
-        tabBarIcon: ({ color, size }) => (
-          <Icon name="MessageCircle" color={color} size={size} />
-        ),
+        tabBarIcon: ChatTabIcon,
       }}
     />
   </Tab.Navigator>
