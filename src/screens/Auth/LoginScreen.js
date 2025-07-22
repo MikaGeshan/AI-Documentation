@@ -16,6 +16,7 @@ import InputText from '../../components/Inputs/InputText';
 import Button from '../../components/Buttons/Button';
 import Hyperlink from '../../components/Others/Hyperlink';
 import Icon from '../../components/Icons/Icon';
+import SuccessAlert from '../../components/Alerts/SuccessAlert';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
@@ -25,6 +26,8 @@ const LoginScreen = () => {
   const [emailOrNameError, setEmailOrNameError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
 
   const handleLogin = async () => {
     const isEmailOrNameEmpty = !emailOrName.trim();
@@ -64,7 +67,14 @@ const LoginScreen = () => {
       const data = await response.json();
 
       if (response.ok) {
-        navigation.replace('ScreenBottomTabs');
+        setShowSuccessAlert(true);
+        setEmailOrNameError(false);
+        setPasswordError(false);
+
+        setTimeout(() => {
+          setShowSuccessAlert(false);
+          navigation.replace('ScreenBottomTabs');
+        }, 3000);
       } else {
         setEmailOrNameError(true);
         setPasswordError(true);
@@ -90,6 +100,15 @@ const LoginScreen = () => {
       justifyContent: 'center',
       alignItems: 'center',
       gap: 20,
+    },
+    alertContainer: {
+      position: 'absolute',
+      top: 16,
+      left: 0,
+      right: 0,
+      zIndex: 999,
+      alignItems: 'flex-end',
+      paddingHorizontal: 16,
     },
     title: {
       fontSize: 24,
@@ -120,13 +139,12 @@ const LoginScreen = () => {
       fontSize: 12,
     },
     hyperlinkContainer: {
-      marginTop: 24,
       alignItems: 'center',
     },
     signUpContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 16,
+      marginTop: 8,
     },
     signUpText: {
       fontSize: 14,
@@ -145,6 +163,14 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {showSuccessAlert && (
+        <View style={styles.alertContainer}>
+          <SuccessAlert
+            message="Successfully Logged In"
+            onHide={() => setShowSuccessAlert(false)}
+          />
+        </View>
+      )}
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

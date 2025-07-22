@@ -8,12 +8,14 @@ import {
   Text,
   View,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import InputText from '../../components/Inputs/InputText';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../../components/Buttons/Button';
 import { API_URL } from '@env';
 import Hyperlink from '../../components/Others/Hyperlink';
+import Icon from '../../components/Icons/Icon';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -22,17 +24,45 @@ const RegisterScreen = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [nameError, setNameError] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [confirmPasswordError, setConfirmPasswordError] = useState('');
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
-      Alert.alert('Validation Error', 'All fields are required');
-      return;
+    let valid = true;
+    setNameError('');
+    setEmailError('');
+    setPasswordError('');
+    setConfirmPasswordError('');
+
+    if (!name) {
+      setNameError('Name is required');
+      valid = false;
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert('Validation Error', 'Passwords do not match');
-      return;
+    if (!email) {
+      setEmailError('Email is required');
+      valid = false;
     }
+
+    if (!password) {
+      setPasswordError('Password is required');
+      valid = false;
+    }
+
+    if (!confirmPassword) {
+      setConfirmPasswordError('Please confirm your password');
+      valid = false;
+    } else if (password !== confirmPassword) {
+      setConfirmPasswordError('Passwords do not match');
+      valid = false;
+    }
+
+    if (!valid) return;
 
     try {
       const response = await fetch(`${API_URL}/api/register`, {
@@ -95,7 +125,9 @@ const RegisterScreen = () => {
       borderColor: '#E6E4E2',
       borderRadius: 8,
     },
-
+    inputError: {
+      borderColor: 'red',
+    },
     signInContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -104,6 +136,15 @@ const RegisterScreen = () => {
     signInText: {
       fontSize: 14,
       marginRight: 4,
+    },
+    passwordContainer: {
+      position: 'relative',
+    },
+    eyeIconContainer: {
+      position: 'absolute',
+      right: 12,
+      top: 16,
+      zIndex: 1,
     },
   });
 
@@ -123,6 +164,7 @@ const RegisterScreen = () => {
                 placeholder="Enter Your Name"
                 value={name}
                 onChangeText={setName}
+                style={[styles.textInput, nameError && styles.inputError]}
               />
             </View>
 
@@ -133,31 +175,61 @@ const RegisterScreen = () => {
                 value={email}
                 autoCapitalize="none"
                 onChangeText={setEmail}
+                style={[styles.textInput, emailError && styles.inputError]}
               />
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
-              <InputText
-                placeholder="Enter Your Password"
-                secureTextEntry
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={styles.passwordContainer}>
+                <InputText
+                  placeholder="Enter Your Password"
+                  secureTextEntry={!showPassword}
+                  value={password}
+                  onChangeText={setPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={[styles.textInput, passwordError && styles.inputError]}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIconContainer}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Icon
+                    name={showPassword ? 'Eye' : 'EyeOff'}
+                    size={20}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Confirm Password</Text>
-              <InputText
-                placeholder="Confirm Password"
-                secureTextEntry
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
+              <View style={styles.passwordContainer}>
+                <InputText
+                  placeholder="Confirm Password"
+                  secureTextEntry={!showConfirmPassword}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={[
+                    styles.textInput,
+                    confirmPasswordError && styles.inputError,
+                  ]}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIconContainer}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <Icon
+                    name={showConfirmPassword ? 'Eye' : 'EyeOff'}
+                    size={20}
+                    color="#666"
+                  />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <Button text="Create New Account" onPress={handleRegister} />
