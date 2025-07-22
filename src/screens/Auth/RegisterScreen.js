@@ -375,7 +375,7 @@ const RegisterScreen = () => {
 
             <View style={styles.signInContainer}>
               <Text style={styles.signInText}>Already have an account?</Text>
-              <Hyperlink text="Sign In" onPress={signInLink} />
+              <Hyperlink text="Sign In Now!" onPress={signInLink} />
             </View>
           </View>
         </ScrollView>

@@ -205,8 +205,6 @@ const LoginScreen = () => {
       borderRadius: 12,
       fontSize: 16,
       backgroundColor: '#F9FAFB',
-      paddingHorizontal: 16,
-      paddingVertical: 16,
     },
     inputError: {
       borderColor: '#EF4444',
@@ -236,10 +234,8 @@ const LoginScreen = () => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      marginTop: 24,
+      marginTop: 12,
       paddingTop: 20,
-      borderTopWidth: 1,
-      borderTopColor: '#E5E7EB',
     },
     signUpText: {
       fontSize: 16,
@@ -346,7 +342,7 @@ const LoginScreen = () => {
 
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>
-              <Hyperlink text="Sign Up" onPress={registerLink} />
+              <Hyperlink text="Register Now!" onPress={registerLink} />
             </View>
           </View>
         </ScrollView>
