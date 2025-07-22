@@ -131,7 +131,7 @@ const RegisterScreen = () => {
     signInContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginTop: 16,
+      marginTop: 8,
     },
     signInText: {
       fontSize: 14,
