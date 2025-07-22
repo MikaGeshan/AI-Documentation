@@ -8,8 +8,8 @@ import {
   View,
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import InputBox from '../../components/InputBox';
-import BubbleChat from '../../components/BubbleChat';
+import InputBox from '../../components/Inputs/InputBox';
+import BubbleChat from '../../components/Others/BubbleChat';
 import { deepSeekResponse } from '../../services/deepSeekResponse';
 import { getInitialGreeting } from '../../utils/greetings';
 import { useLoadingMessage } from '../../hooks/loadingMessage';

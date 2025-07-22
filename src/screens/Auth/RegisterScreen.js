@@ -1,24 +1,175 @@
+import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
-  TextInputComponent,
   View,
+  Alert,
 } from 'react-native';
-import React from 'react';
-import InputBox from '../../components/InputBox';
+import InputText from '../../components/Inputs/InputText';
+import { useNavigation } from '@react-navigation/native';
+import Button from '../../components/Buttons/Button';
+import { API_URL } from '@env';
+import Hyperlink from '../../components/Others/Hyperlink';
 
 const RegisterScreen = () => {
-  const styles = StyleSheet.create({});
+  const navigation = useNavigation();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleRegister = async () => {
+    if (!name || !email || !password || !confirmPassword) {
+      Alert.alert('Validation Error', 'All fields are required');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Validation Error', 'Passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/api/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        navigation.replace('ScreenBottomTabs');
+      } else {
+        Alert.alert('Registration Failed', data.message || 'Unknown error');
+      }
+    } catch (error) {
+      console.error('Register error:', error);
+      Alert.alert('Error', 'Something went wrong. Please try again later.');
+    }
+  };
+
+  const styles = StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: '#fff',
+    },
+    keyboardContainer: {
+      flex: 1,
+    },
+    scrollContainer: {
+      flex: 1,
+    },
+    formContainer: {
+      flex: 1,
+      padding: 16,
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 20,
+    },
+    title: {
+      fontSize: 24,
+      fontWeight: 'bold',
+      marginBottom: 8,
+      textAlign: 'center',
+    },
+    inputGroup: {
+      width: '100%',
+      marginBottom: 12,
+    },
+    label: {
+      marginBottom: 6,
+      fontSize: 14,
+      fontWeight: '500',
+    },
+    textInput: {
+      borderWidth: 1,
+      borderColor: '#E6E4E2',
+      borderRadius: 8,
+    },
+
+    signInContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    signInText: {
+      fontSize: 14,
+      marginRight: 4,
+    },
+  });
 
   return (
-    <SafeAreaView>
-      <KeyboardAvoidingView>
-        <View>
-          <Text>Create Account</Text>
-          <InputBox />
-        </View>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView style={styles.scrollContainer}>
+          <View style={styles.formContainer}>
+            <Text style={styles.title}>Create Account</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Name</Text>
+              <InputText
+                placeholder="Enter Your Name"
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Email</Text>
+              <InputText
+                placeholder="Enter Your Email"
+                value={email}
+                autoCapitalize="none"
+                onChangeText={setEmail}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Password</Text>
+              <InputText
+                placeholder="Enter Your Password"
+                secureTextEntry
+                value={password}
+                onChangeText={setPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <InputText
+                placeholder="Confirm Password"
+                secureTextEntry
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
+
+            <Button text="Create New Account" onPress={handleRegister} />
+            <View style={styles.signInContainer}>
+              <Text style={styles.signInText}>Already have an account?</Text>
+              <Hyperlink
+                text="Sign In Now!"
+                onPress={() => navigation.navigate('Login')}
+              />
+            </View>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

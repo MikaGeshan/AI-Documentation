@@ -8,8 +8,8 @@ import DocumentsScreen from '../screens/Main/DocumentsScreen';
 import ChatScreen from '../screens/Main/ChatScreen';
 import DocumentViewerScreen from '../screens/Main/DocumentViewerScreen';
 
-import Header from '../components/Header';
-import Icon from '../components/Icon';
+import Header from '../components/Headers/Header';
+import Icon from '../components/Icons/Icon';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
 

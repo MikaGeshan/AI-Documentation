@@ -8,6 +8,7 @@ const InputText = ({
   autoCapitalize,
   autoCorrect,
   style,
+  onPress,
   ...props
 }) => {
   const styles = StyleSheet.create({
@@ -39,6 +40,7 @@ const InputText = ({
         autoCapitalize={autoCapitalize}
         autoCorrect={autoCorrect}
         value={value}
+        onPress={onPress}
         style={styles.inputText}
         {...props}
       />

@@ -6,7 +6,7 @@ import Animated, {
   useAnimatedStyle,
   interpolate,
 } from 'react-native-reanimated';
-import Button from './Button';
+import Button from '../Buttons/Button';
 
 const { width } = Dimensions.get('window');
 

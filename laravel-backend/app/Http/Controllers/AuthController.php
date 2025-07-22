@@ -9,29 +9,43 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    // Login user
+
+    CONST SUCCESS_LOGIN_MESSAGE = 'Successfully Logged In';
+
+    CONST ERROR_LOGIN_MESSAGE = 'Error while logging in';
+
+    CONST SUCCESS_REGISTER_MESSAGE = 'User Successfully Registered';
+
+    CONST ERROR_REGISTER_MESSAGE = 'Failed to Regist User';
+
     public function login(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+{
+    $request->validate([
+        'name' => 'nullable|string',
+        'email' => 'nullable|email',
+        'password' => 'required|min:8',
+    ]);
 
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
+    $emailOrname = $request->input('email') ?? $request->input('name');
 
-            return response()->json([
-                'message' => 'Login successful',
-                'user' => Auth::user()
-            ]);
-        }
+    $input = filter_var($emailOrname, FILTER_VALIDATE_EMAIL) ? 'email' : 'name';
 
+    $credentials = [
+        $input => $emailOrname,
+        'password' => $request->input('password'),
+    ];
+
+    if (Auth::attempt($credentials)) {
+        $request->session()->regenerate();
         return response()->json([
-            'message' => 'Invalid credentials'
-        ], 401);
+            'message' => 'Login successful',
+            'user' => Auth::user()
+        ]);
     }
 
-    // Register new user
+    return response()->json(['message' => 'Invalid credentials'], 401);
+}
+
     public function register(Request $request)
     {
         $validatedData = $request->validate([
@@ -40,7 +54,7 @@ class AuthController extends Controller
             'password' => 'required|min:8'
         ]);
 
-        $user = User::create([
+        User::create([
             'name' => $validatedData['name'],
             'email' => $validatedData['email'],
             'password' => Hash::make($validatedData['password'])
@@ -48,7 +62,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'User registered successfully',
-            'user' => $user
         ], 201);
+
     }
 }
