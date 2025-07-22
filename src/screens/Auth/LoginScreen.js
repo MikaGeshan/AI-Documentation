@@ -21,10 +21,8 @@ const LoginScreen = () => {
   const navigation = useNavigation();
 
   const [emailOrName, setEmailOrName] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [emailOrNameError, setEmailOrNameError] = useState(false);
-  const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
