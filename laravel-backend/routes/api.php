@@ -1,7 +1,10 @@
 <?php
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OtpController;
 use Illuminate\Support\Facades\Route;
 
 
-Route::middleware('api')->post('/login', [AuthController::class, 'login']);
-Route::middleware('api')->post('/register', [AuthController::class, 'register']);
+Route::middleware('api')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register']);
+});

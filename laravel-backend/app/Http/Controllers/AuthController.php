@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Otp\UserRegistrationOtp; 
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
+use SadiqSalau\LaravelOtp\Facades\Otp;
 
 class AuthController extends Controller
 {
@@ -46,23 +49,35 @@ class AuthController extends Controller
     return response()->json(['message' => 'Invalid credentials'], 401);
 }
 
-    public function register(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8'
-        ]);
+   public function register(Request $request)
+{
+    $request->validate([
+    'name'     => ['required', 'string', 'max:255'],
+    'email'    => ['required', 'email', 'unique:users,email'],
+    'password' => ['required', 'string', 'min:8'], 
+]);
 
-        User::create([
-            'name' => $validatedData['name'],
-            'email' => $validatedData['email'],
-            'password' => Hash::make($validatedData['password'])
-        ]);
+
+    try {
+        $otp = Otp::identifier($request->email)->send(
+            new UserRegistrationOtp(
+                name: $request->name,
+                email: $request->email,
+                password: $request->password
+            ),
+            Notification::route('mail', $request->email)
+        );
 
         return response()->json([
-            'message' => 'User registered successfully',
-        ], 201);
-
+            'success' => true,
+            'message' => 'OTP berhasil dikirim. Silakan cek email Anda untuk verifikasi.',
+            'status' => $otp['status'],
+        ]);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengirim OTP: ' . $e->getMessage(),
+        ], 500);
     }
+}
 }

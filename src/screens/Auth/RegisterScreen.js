@@ -16,7 +16,7 @@ import Button from '../../components/Buttons/Button';
 import { API_URL } from '@env';
 import Hyperlink from '../../components/Buttons/Hyperlink';
 import Icon from '../../components/Icons/Icon';
-import SuccessAlert from '../../components/Alerts/SuccessAlert';
+import SuccessDialog from '../../components/Alerts/SuccessDialog';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -37,7 +37,7 @@ const RegisterScreen = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const updateFormData = (field, value) => {
@@ -94,9 +94,9 @@ const RegisterScreen = () => {
   };
 
   const handleSuccessfulRegistration = () => {
-    setShowSuccessAlert(true);
+    setShowSuccessDialog(true);
     setTimeout(() => {
-      setShowSuccessAlert(false);
+      setShowSuccessDialog(false);
       navigation.replace('Verify');
     }, 3000);
   };
@@ -162,12 +162,15 @@ const RegisterScreen = () => {
     scrollContent: {
       flexGrow: 1,
     },
-    alertContainer: {
+    dialogContainer: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
-      zIndex: 1000,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 999,
     },
     formContainer: {
       flex: 1,
@@ -243,11 +246,11 @@ const RegisterScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {showSuccessAlert && (
-        <View style={styles.alertContainer}>
-          <SuccessAlert
+      {showSuccessDialog && (
+        <View style={styles.dialogContainer}>
+          <SuccessDialog
             message="Account created successfully!"
-            onHide={() => setShowSuccessAlert(false)}
+            onHide={() => setShowSuccessDialog(false)}
           />
         </View>
       )}
