@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Hash;
 use App\Otp\UserRegistrationOtp;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use SadiqSalau\LaravelOtp\Facades\Otp;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\JWT;
@@ -45,36 +46,43 @@ public function login(Request $request)
 
 
     public function register(Request $request)
-    {
-        $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
+{
+    $request->validate([
+        'name'     => ['required', 'string', 'max:255'],
+        'email'    => ['required', 'email', 'unique:users,email'],
+        'password' => ['required', 'string', 'min:8'],
+    ]);
+
+    try {
+        $email = strtolower($request->email);
+
+        Cache::put("register_payload_{$email}", [
+            'name'     => $request->name,
+            'email'    => $email,
+            'password' => $request->password, 
+        ], now()->addMinutes(10)); 
+
+        $otp = Otp::identifier($email)->send(
+            new UserRegistrationOtp(
+                name: $request->name,
+                email: $email,
+                password: $request->password
+            ),
+            Notification::route('mail', $email)
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'OTP berhasil dikirim. Silakan cek email Anda untuk verifikasi.',
+            'status' => $otp['status'],
         ]);
-
-        try {
-            $otp = Otp::identifier($request->email)->send(
-                new UserRegistrationOtp(
-                    name: $request->name,
-                    email: $request->email,
-                    password: $request->password
-                ),
-                Notification::route('mail', $request->email)
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'OTP berhasil dikirim. Silakan cek email Anda untuk verifikasi.',
-                'status' => $otp['status'],
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengirim OTP: ' . $e->getMessage(),
-            ], 500);
-        }
+    } catch (\Throwable $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengirim OTP: ' . $e->getMessage(),
+        ], 500);
     }
-
+}
     public function logout()
     {
     JWTAuth::invalidate(JWTAuth::getToken());
