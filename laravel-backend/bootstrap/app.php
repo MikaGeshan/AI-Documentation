@@ -18,7 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(HandleCors::class);
 
-        // ⬇️ Tambahkan ini untuk mendukung session & cookie
         $middleware->api([
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,

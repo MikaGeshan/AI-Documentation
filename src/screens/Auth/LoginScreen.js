@@ -19,6 +19,7 @@ import Hyperlink from '../../components/Buttons/Hyperlink';
 import Icon from '../../components/Icons/Icon';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
@@ -77,14 +78,23 @@ const LoginScreen = () => {
     };
   };
 
-  const handleSuccessfulLogin = () => {
-    setShowSuccessDialog(true);
-    setErrors({ emailOrName: '', password: '' });
+  const handleSuccessfulLogin = async data => {
+    const { access_token, user } = data;
 
-    setTimeout(() => {
-      setShowSuccessDialog(false);
-      navigation.replace('ScreenBottomTabs');
-    }, 2000);
+    try {
+      await AsyncStorage.setItem('token', access_token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+
+      setErrors({ emailOrName: '', password: '' });
+      setShowSuccessDialog(true);
+
+      setTimeout(() => {
+        setShowSuccessDialog(false);
+        navigation.replace('ScreenBottomTabs');
+      }, 2000);
+    } catch (e) {
+      console.error('Gagal menyimpan token:', e);
+    }
   };
 
   const handleLoginError = data => {
