@@ -17,6 +17,7 @@ import { API_URL } from '@env';
 import Hyperlink from '../../components/Buttons/Hyperlink';
 import Icon from '../../components/Icons/Icon';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
+import axios from 'axios';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -97,7 +98,13 @@ const RegisterScreen = () => {
     setShowSuccessDialog(true);
     setTimeout(() => {
       setShowSuccessDialog(false);
-      navigation.replace('Verify');
+      navigation.replace('Verify', {
+        formData: {
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+        },
+      });
     }, 3000);
   };
 
@@ -113,32 +120,38 @@ const RegisterScreen = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_URL}/api/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
+      const response = await axios.post(
+        `${API_URL}/api/register`,
+        {
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
-        }),
-      });
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+        },
+      );
 
-      const data = await response.json();
+      console.log(response.data);
 
-      if (response.ok) {
+      if (response.status === 200 || response.status === 201) {
         handleSuccessfulRegistration();
       } else {
-        handleRegistrationError(data);
+        handleRegistrationError(response.data);
       }
     } catch (error) {
       console.error('Register error:', error);
-      Alert.alert(
-        'Error',
-        'Network error. Please check your connection and try again.',
-      );
+      if (error.response && error.response.data) {
+        handleRegistrationError(error.response.data);
+      } else {
+        Alert.alert(
+          'Error',
+          'Network error. Please check your connection and try again.',
+        );
+      }
     } finally {
       setIsLoading(false);
     }

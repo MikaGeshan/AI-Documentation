@@ -1,4 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useState, useCallback } from 'react';
 import {
   SafeAreaView,
@@ -12,8 +12,13 @@ import {
 import InputOTP from '../../components/Inputs/InputOTP';
 import Button from '../../components/Buttons/Button';
 import Hyperlink from '../../components/Buttons/Hyperlink';
+import { API_URL } from '@env';
+import axios from 'axios';
 
 const VerifyOTPScreen = () => {
+  const route = useRoute();
+  const { formData } = route.params ?? {};
+
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
@@ -49,14 +54,29 @@ const VerifyOTPScreen = () => {
     setError('');
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const payload = {
+        email: formData.email.trim().toLowerCase(),
+        otp: code,
+      };
 
-      console.log('Verifying code:', code);
+      const response = await axios.post(`${API_URL}/api/verify-otp`, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
+
+      console.log('OTP verification success:', response.data);
 
       navigation.navigate('ScreenBottomTabs');
     } catch (err) {
-      setError('Invalid verification code. Please try again.');
-      console.error('Verification failed:', err);
+      console.error('OTP verification failed:', err);
+
+      if (err.response?.data?.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('Verifikasi gagal. Silakan coba lagi.');
+      }
     } finally {
       setIsVerifying(false);
     }

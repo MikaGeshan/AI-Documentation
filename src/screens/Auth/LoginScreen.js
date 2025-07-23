@@ -18,6 +18,7 @@ import Button from '../../components/Buttons/Button';
 import Hyperlink from '../../components/Buttons/Hyperlink';
 import Icon from '../../components/Icons/Icon';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
+import axios from 'axios';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
@@ -106,28 +107,27 @@ const LoginScreen = () => {
     try {
       const payload = createLoginPayload();
 
-      const response = await fetch(`${API_URL}/api/login`, {
-        method: 'POST',
+      const response = await axios.post(`${API_URL}/api/login`, payload, {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
-        body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      console.log(response.data);
 
-      if (response.ok) {
-        handleSuccessfulLogin();
-      } else {
-        handleLoginError(data);
-      }
+      handleSuccessfulLogin(response.data);
     } catch (error) {
       console.error('Login error:', error);
-      Alert.alert(
-        'Connection Error',
-        'Unable to connect to server. Please check your internet connection and try again.',
-      );
+
+      if (error.response && error.response.data) {
+        handleLoginError(error.response.data);
+      } else {
+        Alert.alert(
+          'Connection Error',
+          'Unable to connect to server. Please check your internet connection and try again.',
+        );
+      }
     } finally {
       setIsLoading(false);
     }
