@@ -15,9 +15,9 @@ import { API_URL } from '@env';
 
 import InputText from '../../components/Inputs/InputText';
 import Button from '../../components/Buttons/Button';
-import Hyperlink from '../../components/Others/Hyperlink';
+import Hyperlink from '../../components/Buttons/Hyperlink';
 import Icon from '../../components/Icons/Icon';
-import SuccessAlert from '../../components/Alerts/SuccessAlert';
+import SuccessDialog from '../../components/Alerts/SuccessDialog';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
@@ -33,7 +33,7 @@ const LoginScreen = () => {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-  const [showSuccessAlert, setShowSuccessAlert] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const updateFormData = (field, value) => {
@@ -77,11 +77,11 @@ const LoginScreen = () => {
   };
 
   const handleSuccessfulLogin = () => {
-    setShowSuccessAlert(true);
+    setShowSuccessDialog(true);
     setErrors({ emailOrName: '', password: '' });
 
     setTimeout(() => {
-      setShowSuccessAlert(false);
+      setShowSuccessDialog(false);
       navigation.replace('ScreenBottomTabs');
     }, 2000);
   };
@@ -159,12 +159,15 @@ const LoginScreen = () => {
       flexGrow: 1,
       justifyContent: 'center',
     },
-    alertContainer: {
+    dialogContainer: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
-      zIndex: 1000,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 999,
     },
     formContainer: {
       flex: 1,
@@ -246,11 +249,11 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {showSuccessAlert && (
-        <View style={styles.alertContainer}>
-          <SuccessAlert
+      {showSuccessDialog && (
+        <View style={styles.dialogContainer}>
+          <SuccessDialog
             message="Welcome back!"
-            onHide={() => setShowSuccessAlert(false)}
+            onHide={() => setShowSuccessDialog(false)}
           />
         </View>
       )}
@@ -268,11 +271,9 @@ const LoginScreen = () => {
         >
           <View style={styles.formContainer}>
             <View style={styles.headerContainer}>
-              <Text style={styles.title}>Welcome Back</Text>
+              <Text style={styles.title}>Let's Sign you in</Text>
               <Text style={styles.subtitle}>Sign in to continue</Text>
             </View>
-
-            {/* Email or Username Input */}
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Email or Username</Text>
               <InputText

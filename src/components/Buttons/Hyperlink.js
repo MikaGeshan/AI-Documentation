@@ -7,7 +7,7 @@ const Hyperlink = ({ text, onPress }) => {
       alignItems: 'center',
     },
     text: {
-      color: '#4aa8ea',
+      color: '#4AA8EA',
       textAlign: 'center',
     },
   });

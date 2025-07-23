@@ -12,6 +12,7 @@ import Header from '../components/Headers/Header';
 import Icon from '../components/Icons/Icon';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
+import VerifyOTPScreen from '../screens/Auth/VerifyOTPScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -64,6 +65,11 @@ export const RootNavigation = () => {
       <Stack.Screen
         name="Login"
         component={LoginScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Verify"
+        component={VerifyOTPScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

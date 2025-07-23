@@ -14,7 +14,7 @@ import InputText from '../../components/Inputs/InputText';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../../components/Buttons/Button';
 import { API_URL } from '@env';
-import Hyperlink from '../../components/Others/Hyperlink';
+import Hyperlink from '../../components/Buttons/Hyperlink';
 import Icon from '../../components/Icons/Icon';
 import SuccessAlert from '../../components/Alerts/SuccessAlert';
 
@@ -97,7 +97,7 @@ const RegisterScreen = () => {
     setShowSuccessAlert(true);
     setTimeout(() => {
       setShowSuccessAlert(false);
-      navigation.replace('ScreenBottomTabs');
+      navigation.replace('Verify');
     }, 3000);
   };
 
@@ -268,9 +268,9 @@ const RegisterScreen = () => {
             <Text style={styles.subtitle}>Sign up to get started</Text>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={styles.label}> Name</Text>
               <InputText
-                placeholder="Enter your full name"
+                placeholder="Enter your name"
                 value={formData.name}
                 onChangeText={value => updateFormData('name', value)}
                 style={[styles.textInput, errors.name && styles.inputError]}
@@ -368,7 +368,7 @@ const RegisterScreen = () => {
             </View>
 
             <Button
-              text={isLoading ? 'Creating Account...' : 'Create Account'}
+              text={isLoading ? 'Creating Account...' : 'Create An Account'}
               onPress={handleRegister}
               disabled={isLoading}
             />
