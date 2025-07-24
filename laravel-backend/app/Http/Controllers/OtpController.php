@@ -21,8 +21,8 @@ class OtpController extends Controller
 
     try {
         $email = strtolower($request->email);
-        $isValid = Otp::identifier($email)->attempt($request->otp);
 
+        $isValid = Otp::identifier($email)->attempt($request->otp);
         if (!$isValid) {
             return response()->json([
                 'success' => false,
@@ -30,44 +30,43 @@ class OtpController extends Controller
             ], 401);
         }
 
-        $payload = Cache::get("register_payload_{$email}");
+        $payload = Cache::pull("register_payload_{$email}");
 
         if (!$payload) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data pendaftaran tidak ditemukan.',
+                'message' => 'Data tidak ada atau expired',
             ], 404);
         }
 
-        if (!User::where('email', $email)->exists()) {
+        $user = User::where('email', $email)->first();
+        if (!$user) {
             $user = User::create([
                 'name'     => $payload['name'],
                 'email'    => $payload['email'],
-                'password' => Hash::make($payload['password']), 
+                'password' => Hash::make($payload['password']),
             ]);
-        } else {
-            $user = User::where('email', $email)->first();
         }
 
         $token = Auth::guard('api')->login($user);
 
         return response()->json([
-        'success' => true,
-        'message' => 'OTP valid, akun berhasil diverifikasi dan login.',
-        'access_token' => $token,
-        'token_type' => 'bearer',
-        'expires_in' => JWTAuth::factory()->getTTL() * 60,
-        'user' => $user,
+            'success'      => true,
+            'message'      => 'OTP valid, akun berhasil diverifikasi dan login.',
+            'access_token' => $token,
+            'token_type'   => 'bearer',
+            'expires_in'   => JWTAuth::factory()->getTTL() * 60,
+            'user'         => $user->only(['id', 'name', 'email']),
         ]);
-
 
     } catch (\Throwable $e) {
         return response()->json([
             'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+            'message' => 'Error: ' . $e->getMessage(),
         ], 500);
     }
 }
+
 
     
 }

@@ -16,7 +16,7 @@ Berikut ini adalah bagian-bagian dari dokumentasi aplikasi yang relevan dengan p
 
 ${docs
   .map(
-    doc => `### Dokumen: ${doc.title || 'Tanpa Judul'}
+    doc => `### Dokumen: ${doc.title || 'Untitled'}
 Link: ${doc.url}
 
 ${cutText(doc.content)}`,

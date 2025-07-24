@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use App\Otp\UserRegistrationOtp;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use SadiqSalau\LaravelOtp\Facades\Otp;
 use Tymon\JWTAuth\Facades\JWTAuth;
-use Tymon\JWTAuth\JWT;
 
 class AuthController extends Controller
 {

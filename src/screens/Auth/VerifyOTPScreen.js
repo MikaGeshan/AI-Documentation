@@ -14,6 +14,7 @@ import Button from '../../components/Buttons/Button';
 import Hyperlink from '../../components/Buttons/Hyperlink';
 import { API_URL } from '@env';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const VerifyOTPScreen = () => {
   const route = useRoute();
@@ -68,7 +69,12 @@ const VerifyOTPScreen = () => {
 
       console.log('OTP verification success:', response.data);
 
-      navigation.navigate('ScreenBottomTabs');
+      const { access_token, user } = response.data;
+
+      await AsyncStorage.setItem('token', access_token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+
+      navigation.replace('ScreenBottomTabs');
     } catch (err) {
       console.error('OTP verification failed:', err);
 

@@ -13,7 +13,9 @@ import Icon from '../components/Icons/Icon';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
 import VerifyOTPScreen from '../screens/Auth/VerifyOTPScreen';
+import { createNavigationContainerRef } from '@react-navigation/native';
 
+export const navigationRef = createNavigationContainerRef();
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
@@ -33,56 +35,64 @@ const ChatHeader = () => (
 
 export const RootNavigation = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(null);
 
   useEffect(() => {
-    const firstLaunch = async () => {
+    const checkInitialState = async () => {
       try {
         const hasLaunched = await AsyncStorage.getItem('hasLaunched');
+        const token = await AsyncStorage.getItem('token');
+
         if (hasLaunched === null) {
           await AsyncStorage.setItem('hasLaunched', 'true');
           setIsFirstLaunch(true);
         } else {
           setIsFirstLaunch(false);
         }
+
+        if (token) {
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
       } catch (error) {
-        console.error('Error checking first launch:', error);
+        console.error('Error during launch check:', error);
         setIsFirstLaunch(false);
+        setIsLoggedIn(false);
       }
     };
 
-    firstLaunch();
+    checkInitialState();
   }, []);
 
-  if (isFirstLaunch === null) {
+  if (isFirstLaunch === null || isLoggedIn === null) {
     return null;
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false }} ref={navigationRef}>
       {isFirstLaunch && (
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
       )}
-      <Stack.Screen
-        name="Login"
-        component={LoginScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Verify"
-        component={VerifyOTPScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="Register"
-        component={RegisterScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen name="ScreenBottomTabs" component={BottomTabNavigation} />
-      <Stack.Screen
-        name="ViewDocument"
-        component={DocumentViewerScreen}
-        options={{ headerShown: true }}
-      />
+      {!isLoggedIn ? (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Verify" component={VerifyOTPScreen} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen
+            name="ScreenBottomTabs"
+            component={BottomTabNavigation}
+          />
+          <Stack.Screen
+            name="ViewDocument"
+            component={DocumentViewerScreen}
+            options={{ headerShown: true }}
+          />
+        </>
+      )}
     </Stack.Navigator>
   );
 };
@@ -101,6 +111,7 @@ const BottomTabNavigation = () => (
       tabBarActiveTintColor: '#4aa8ea',
       tabBarInactiveTintColor: '#999',
     }}
+    ref={navigationRef}
   >
     <Tab.Screen
       name="Documents"

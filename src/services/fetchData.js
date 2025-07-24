@@ -1,14 +1,30 @@
-import axios from 'axios';
-import { API_URL } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { navigationRef } from '../navigation/RootNavigation';
 
-export const checkConnection = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/up`);
-    console.log('Checking:', `${API_URL}/up`);
-    console.log('Connected to API:', response.status);
-    return { success: true, data: response.data };
-  } catch (error) {
-    console.error('API connection failed:', error.message);
-    return { success: false, error };
+export const checkAuthStatus = async () => {
+  const token = await AsyncStorage.getItem('token');
+
+  const waitUntilNavigationReady = () =>
+    new Promise(resolve => {
+      if (navigationRef.isReady()) {
+        resolve();
+      } else {
+        const interval = setInterval(() => {
+          if (navigationRef.isReady()) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, 100);
+      }
+    });
+
+  await waitUntilNavigationReady();
+
+  if (token) {
+    console.log('User is authenticated.');
+    navigationRef.navigate('ScreenBottomTabs');
+  } else {
+    console.log('Token not found, redirect to login.');
+    navigationRef.navigate('Login');
   }
 };
