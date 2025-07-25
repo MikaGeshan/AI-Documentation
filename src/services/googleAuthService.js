@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { API_URL } from '@env';
+import { API_URL, GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '@env';
 import axios from 'axios';
 
 export const signInWithGoogle = async ({ handleSuccessfulLogin }) => {
@@ -25,4 +25,13 @@ export const signInWithGoogle = async ({ handleSuccessfulLogin }) => {
   } catch (error) {
     console.error('Google Sign-In error:', error?.message || error);
   }
+};
+
+export const configureGoogleSignIn = () => {
+  GoogleSignin.configure({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+    offlineAccess: true,
+    scopes: ['profile', 'email'],
+  });
 };
