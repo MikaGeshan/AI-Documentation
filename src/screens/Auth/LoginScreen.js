@@ -214,6 +214,31 @@ const LoginScreen = ({}) => {
       fontWeight: '600',
       color: '#374151',
     },
+    separatorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginVertical: 24,
+    },
+
+    separatorLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: '#E5E7EB',
+      marginHorizontal: 8,
+    },
+
+    separatorText: {
+      fontSize: 14,
+      color: '#6B7280',
+      fontWeight: '500',
+    },
+
+    googleButtonContainer: {
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+
     textInput: {
       borderWidth: 1,
       borderColor: '#E5E7EB',
@@ -305,7 +330,6 @@ const LoginScreen = ({}) => {
                 <Text style={styles.errorText}>{errors.emailOrName}</Text>
               ) : null}
             </View>
-
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Password</Text>
               <View style={styles.passwordContainer}>
@@ -339,27 +363,36 @@ const LoginScreen = ({}) => {
                 <Text style={styles.errorText}>{errors.password}</Text>
               ) : null}
             </View>
-
             <View style={styles.forgotPasswordContainer}>
               <Hyperlink
                 text="Forgot Password?"
                 onPress={handleForgotPassword}
               />
             </View>
-
             <Button
               text={isLoading ? 'Signing In...' : 'Sign In'}
               onPress={handleLogin}
               disabled={isLoading}
             />
-            <GoogleSigninButton
-              onPress={() =>
-                signInWithGoogle({
-                  navigation,
-                  handleSuccessfulLogin,
-                })
-              }
-            />
+            <View style={styles.separatorContainer}>
+              <View style={styles.separatorLine} />
+              <Text style={styles.separatorText}>Or Sign In With</Text>
+              <View style={styles.separatorLine} />
+            </View>
+
+            <View style={styles.googleButtonContainer}>
+              <GoogleSigninButton
+                onPress={() =>
+                  signInWithGoogle({
+                    navigation,
+                    handleSuccessfulLogin,
+                  })
+                }
+                size={GoogleSigninButton.Size.Wide}
+                color={GoogleSigninButton.Color.Dark}
+              />
+            </View>
+
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>
               <Hyperlink text="Register Now!" onPress={registerLink} />
