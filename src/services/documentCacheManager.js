@@ -30,63 +30,21 @@ export const getCachedDocument = async fileId => {
   return isCacheValid(parsed) ? parsed : null;
 };
 
-const filterFolderName = (folderPath = '') => {
-  const parts = folderPath.split('/');
-  return parts[parts.length - 1];
-};
-
 export const preloadAllDocuments = async () => {
-  console.log('Preloading Documents...');
-  const documents = await getFolderContents();
+  try {
+    const folderData = await getFolderContents();
+    if (!folderData || !folderData.subfolders) return;
 
-  const grouped = {};
+    const folderMap = {};
 
-  for (const doc of documents) {
-    const fileId = extractFileId(doc.downloadUrl);
-    if (!fileId) continue;
+    folderData.subfolders.forEach(subfolder => {
+      folderMap[subfolder.name] = subfolder.files;
+    });
 
-    const cached = await getCachedDocument(fileId);
-    let docData;
-
-    if (cached) {
-      console.log(`Cache available for ${doc.name}`);
-      docData = {
-        ...cached,
-        folder: cached.folder || doc.folder || 'Lainnya',
-      };
-    } else {
-      const result = await convertDocument(doc.downloadUrl);
-      if (result?.content) {
-        docData = {
-          title: result.title || doc.name,
-          content: result.content,
-          url: result.url || doc.downloadUrl,
-          folder: filterFolderName(doc.folder) || 'Other',
-        };
-        await cacheDocument(fileId, docData);
-        console.log(`Cache saved: ${doc.name}`);
-      } else {
-        console.warn(`Error converting document: ${doc.name}`);
-        continue;
-      }
-    }
-
-    const folder = docData.folder || 'Other';
-    if (!grouped[folder]) grouped[folder] = [];
-    grouped[folder].push(docData);
+    await AsyncStorage.setItem('doc-folder-map', JSON.stringify(folderMap));
+    console.log('Documents cached successfully');
+  } catch (err) {
+    console.error('Failed to preload documents:', err);
+    throw err;
   }
-
-  const folderNames = Object.keys(grouped);
-  await AsyncStorage.setItem('doc-folder-list', JSON.stringify(folderNames));
-  await AsyncStorage.setItem('doc-folder-map', JSON.stringify(grouped));
-
-  console.log('Folder names cached:', folderNames);
-  console.log('Grouped folder map saved');
-  console.log('Done Preloading');
-};
-
-const extractFileId = url => {
-  const match =
-    url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/id=([a-zA-Z0-9-_]+)/);
-  return match?.[1] || null;
 };

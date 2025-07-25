@@ -1,33 +1,40 @@
 import axios from 'axios';
-import {
-  GOOGLE_CONVERT_SCRIPT,
-  GOOGLE_JSON_SCRIPT,
-} from '../configs/google_script';
-import { FOLDER_ID } from '../configs/drive';
+import { GOOGLE_CONVERT_SCRIPT } from '../configs/google_script';
+import { API_URL } from '@env';
 
 export const getFolderContents = async () => {
   try {
-    const url = `${GOOGLE_JSON_SCRIPT}?folderId=${FOLDER_ID}`;
+    const url = `${API_URL}/api/drive-contents`;
     console.log('Fetching folder contents from:', url);
-    const response = await axios.get(url);
-    console.log('Received response:', response.data);
-    const files = response.data;
 
-    const mapped = files.map(file => {
-      return {
-        ...file,
-        downloadUrl:
-          file.link || file.id
-            ? `https://drive.google.com/uc?id=${file.id}&export=download`
-            : null,
-      };
-    });
+    const response = await axios.get(url);
+
+    const data = response.data;
+
+    const mapped = {
+      subfolders: data.subfolders.map(sub => ({
+        id: sub.id,
+        name: sub.name,
+        webViewLink: sub.webViewLink,
+        files: sub.files.map(file => ({
+          ...file,
+          downloadUrl:
+            file.mimeType === 'application/vnd.google-apps.document'
+              ? file.webViewLink
+              : `https://drive.google.com/uc?id=${file.id}&export=download`,
+        })),
+      })),
+    };
+
+    console.log(mapped);
+
     return mapped;
   } catch (error) {
     console.error(
       'Failed to fetch drive contents',
       error?.response?.data || error.message,
     );
+    return null;
   }
 };
 

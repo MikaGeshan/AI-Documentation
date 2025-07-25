@@ -20,8 +20,11 @@ import Icon from '../../components/Icons/Icon';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
+import { signInWithGoogle } from '../../services/googleAuthService';
+import { navigationRef } from '../../navigation/RootNavigation';
 
-const LoginScreen = () => {
+const LoginScreen = ({}) => {
   const navigation = useNavigation();
 
   const [formData, setFormData] = useState({
@@ -90,7 +93,10 @@ const LoginScreen = () => {
 
       setTimeout(() => {
         setShowSuccessDialog(false);
-        navigation.replace('ScreenBottomTabs');
+        if (!navigationRef.isReady()) {
+          return null;
+        }
+        navigationRef.current?.replace('ScreenBottomTabs');
       }, 2000);
     } catch (e) {
       console.error('Gagal menyimpan token:', e);
@@ -350,7 +356,14 @@ const LoginScreen = () => {
               onPress={handleLogin}
               disabled={isLoading}
             />
-
+            <GoogleSigninButton
+              onPress={() =>
+                signInWithGoogle({
+                  navigation,
+                  handleSuccessfulLogin,
+                })
+              }
+            />
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>
               <Hyperlink text="Register Now!" onPress={registerLink} />

@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use Illuminate\Http\Request;
 use App\Otp\UserRegistrationOtp;
 use Illuminate\Support\Facades\Notification;
@@ -17,8 +16,7 @@ class AuthController extends Controller
     const SUCCESS_REGISTER_MESSAGE = 'User Successfully Registered';
     const ERROR_REGISTER_MESSAGE = 'Failed to Regist User';
 
-
-public function login(Request $request)
+    public function login(Request $request)
 {
     $request->validate([
         'email' => 'nullable|email',
@@ -39,7 +37,7 @@ public function login(Request $request)
     }
 
     return $this->respondWithToken($token);
-}
+    }
 
 
     public function register(Request $request)
@@ -79,7 +77,7 @@ public function login(Request $request)
             'message' => 'Gagal mengirim OTP: ' . $e->getMessage(),
         ], 500);
     }
-}
+    }
     public function logout()
     {
     JWTAuth::invalidate(JWTAuth::getToken());
@@ -107,8 +105,6 @@ public function login(Request $request)
         'expires_in' => JWTAuth::factory()->getTTL() * 60,
         'user' => JWTAuth::user(),
     ]);
-}
-
-
+    }
 
 }

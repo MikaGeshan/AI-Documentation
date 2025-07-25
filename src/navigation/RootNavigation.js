@@ -70,13 +70,17 @@ export const RootNavigation = () => {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} ref={navigationRef}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       {isFirstLaunch && (
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
       )}
       {!isLoggedIn ? (
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Login">
+            {props => (
+              <LoginScreen {...props} onLogin={() => setIsLoggedIn(true)} />
+            )}
+          </Stack.Screen>
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Verify" component={VerifyOTPScreen} />
         </>
