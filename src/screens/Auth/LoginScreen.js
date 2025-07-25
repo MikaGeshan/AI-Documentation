@@ -22,7 +22,6 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { signInWithGoogle } from '../../services/googleAuthService';
-import { navigationRef } from '../../navigation/RootNavigation';
 
 const LoginScreen = ({}) => {
   const navigation = useNavigation();
@@ -93,10 +92,7 @@ const LoginScreen = ({}) => {
 
       setTimeout(() => {
         setShowSuccessDialog(false);
-        if (!navigationRef.isReady()) {
-          return null;
-        }
-        navigationRef.current?.replace('ScreenBottomTabs');
+        navigation.replace('ScreenBottomTabs');
       }, 2000);
     } catch (e) {
       console.error('Gagal menyimpan token:', e);

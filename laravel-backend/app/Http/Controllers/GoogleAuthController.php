@@ -15,43 +15,45 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 
 class GoogleAuthController extends Controller
 {
-    public function handleSignInWithGoogle(Request $request)
-    {
-        $idToken = $request->input('idToken');
+   public function handleSignInWithGoogle(Request $request)
+{
+    $idToken = $request->input('idToken');
 
-        if (!$idToken) {
-            return response()->json(['error' => 'Missing ID token'], 400);
-        }
-
-        $client = new Google_Client(['client_id' => env('GOOGLE_CLIENT_ID')]);
-        $payload = $client->verifyIdToken($idToken);
-
-        if (!$payload) {
-            return response()->json(['error' => 'Invalid ID Token'], 401);
-        }
-
-        $email = $payload['email'];
-        $name = $payload['name'];
-
-        $user = User::firstOrNew(['email' => $email]);
-        $user->name = $name;
-        $user->google_id = $payload['sub'];
-
-        if (!$user->exists) {
-            $user->role = 'user';
-            $user->email_verified_at = now();
-        }
-
-        $user->save();
-
-        $token = JWTAuth::fromUser($user);
-
-        return response()->json([
-            'token' => $token,
-            'user' => $user,
-            'role' => $user->role,
-        ]);
+    if (!$idToken) {
+        return response()->json(['error' => 'Missing ID token'], 400);
     }
+
+    $client = new Google_Client(['client_id' => env('GOOGLE_CLIENT_ID')]);
+    $payload = $client->verifyIdToken($idToken);
+
+    if (!$payload) {
+        return response()->json(['error' => 'Invalid ID Token'], 401);
+    }
+
+    $email = $payload['email'];
+    $name = $payload['name'];
+
+    $user = User::firstOrNew(['email' => $email]);
+    $user->name = $name;
+    $user->google_id = $payload['sub'];
+
+    if (!$user->exists) {
+        $hasAccess = $this->checkFolderAccess($email); 
+        $user->role = $hasAccess ? 'admin' : 'user';
+        $user->email_verified_at = now();
+    }
+
+    $user->save();
+
+    $token = JWTAuth::fromUser($user);
+
+    return response()->json([
+        'token' => $token,
+        'user' => $user,
+        'role' => $user->role,
+    ]);
+}
+
 
     public function redirectToGoogle()
     {
