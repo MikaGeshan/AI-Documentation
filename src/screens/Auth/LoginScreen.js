@@ -220,25 +220,21 @@ const LoginScreen = ({}) => {
       justifyContent: 'center',
       marginVertical: 24,
     },
-
     separatorLine: {
       flex: 1,
       height: 1,
       backgroundColor: '#E5E7EB',
       marginHorizontal: 8,
     },
-
     separatorText: {
       fontSize: 14,
       color: '#6B7280',
       fontWeight: '500',
     },
-
     googleButtonContainer: {
       alignItems: 'center',
       marginBottom: 16,
     },
-
     textInput: {
       borderWidth: 1,
       borderColor: '#E5E7EB',

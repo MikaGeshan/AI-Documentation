@@ -18,6 +18,8 @@ import Hyperlink from '../../components/Buttons/Hyperlink';
 import Icon from '../../components/Icons/Icon';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import axios from 'axios';
+import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
+import { signInWithGoogle } from '../../services/googleAuthService';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -189,10 +191,31 @@ const RegisterScreen = () => {
       flex: 1,
       paddingHorizontal: 20,
       paddingTop: Platform.select({
-        ios: 60,
-        android: 40,
+        ios: 20,
+        android: 20,
       }),
       paddingBottom: 20,
+    },
+    separatorContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginVertical: 24,
+    },
+    separatorLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: '#E5E7EB',
+      marginHorizontal: 8,
+    },
+    separatorText: {
+      fontSize: 14,
+      color: '#6B7280',
+      fontWeight: '500',
+    },
+    googleButtonContainer: {
+      alignItems: 'center',
+      marginBottom: 16,
     },
     title: {
       fontSize: 28,
@@ -388,6 +411,25 @@ const RegisterScreen = () => {
               onPress={handleRegister}
               disabled={isLoading}
             />
+
+            <View style={styles.separatorContainer}>
+              <View style={styles.separatorLine} />
+              <Text style={styles.separatorText}>Or Sign In With</Text>
+              <View style={styles.separatorLine} />
+            </View>
+
+            <View style={styles.googleButtonContainer}>
+              <GoogleSigninButton
+                onPress={() =>
+                  signInWithGoogle({
+                    navigation,
+                    handleSuccessfulRegistration,
+                  })
+                }
+                size={GoogleSigninButton.Size.Wide}
+                color={GoogleSigninButton.Color.Dark}
+              />
+            </View>
 
             <View style={styles.signInContainer}>
               <Text style={styles.signInText}>Already have an account?</Text>
