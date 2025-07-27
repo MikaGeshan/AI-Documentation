@@ -24,6 +24,7 @@ import ProgressBar from '../../components/Loaders/ProgressBar';
 import { preloadAllDocuments } from '../../services/documentCacheManager';
 import { requestAndroidPermission } from '../../utils/requestPermission';
 import { fetchConvertedPdfUrl } from '../../services/docxProcessToPdf';
+import { API_URL } from '@env';
 
 const DocumentsScreen = () => {
   const [folders, setFolders] = useState([]);
@@ -35,6 +36,8 @@ const DocumentsScreen = () => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState(null);
+  // const [isAdmin, setIsAdmin] = useState(false);
+  // const [isUser, setIsUser] = useState(false);
 
   const navigation = useNavigation();
 
@@ -240,12 +243,18 @@ const DocumentsScreen = () => {
           message={`What do you want to do with "${formatDocName(
             selectedDoc?.title || selectedDoc?.name,
           )}"?`}
-          option1Text="Open"
+          option1Text="Edit"
           option2Text="Download"
-          onOption1={() => {
+          onOption1={async () => {
             setShowOption(false);
-            setSelectedDoc(null);
-            navigation.navigate('ViewDocument', { doc: selectedDoc });
+            // setSelectedDoc(null);
+            // navigation.navigate('ViewDocument', { doc: selectedDoc });
+            if (selectedDoc?.webViewLink) {
+              navigation.navigate('EditDocument', {
+                url: selectedDoc.webViewLink,
+                title: selectedDoc.name || 'Dokumen',
+              });
+            }
           }}
           onOption2={() => {
             const docUrl = selectedDoc.url;

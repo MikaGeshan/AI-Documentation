@@ -11,6 +11,7 @@ Route::post('/verify-otp', [OtpController::class, 'verifyOtp']);
 Route::post('/auth/google', [GoogleAuthController::class, 'handleSignInWithGoogle'])->middleware('api');
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 Route::get('/drive-contents', [GoogleDriveController::class, 'getDriveContents']);
+Route::get('/edit-docs', [GoogleDriveController::class, 'editGoogleDocs']);
 
 Route::middleware(['auth:api'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);

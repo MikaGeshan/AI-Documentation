@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Services\GoogleTokenService;
 use Google\Service\Drive as Google_Service_Drive;
-use Google_Service_Drive_DriveFile;
+use Google\Client;
+use Google\Service\Docs;
+use Google\Service\Docs\Request as DocsRequest;
+use Google\Service\Docs\BatchUpdateDocumentRequest;
 use Illuminate\Http\Request;
 
 class GoogleDriveController extends Controller
@@ -68,5 +71,45 @@ class GoogleDriveController extends Controller
         'subfolders' => $subfolderData
     ]);
 }
+
+    public function editGoogleDocs(Request $request)
+    {
+        $request->validate([
+            'access_token' => 'required|string',
+            'document_id' => 'required|string',
+            'new_text' => 'required|string',
+        ]);
+
+        $accessToken = $request->input('access_token');
+        $documentId = $request->input('document_id');
+        $newText = $request->input('new_text');
+
+        try {
+            $client = new Client();
+            $client->setAccessToken($accessToken);
+
+            $docsService = new Docs($client);
+
+            $requests = [
+                new DocsRequest([
+                    'insertText' => [
+                        'location' => ['index' => 1], 
+                        'text' => $newText
+                    ]
+                ])
+            ];
+
+            $docsService->documents->batchUpdate($documentId, new BatchUpdateDocumentRequest([
+                'requests' => $requests
+            ]));
+
+            return response()->json(['message' => 'Dokumen berhasil diedit.']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal mengedit dokumen.',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
 
 }

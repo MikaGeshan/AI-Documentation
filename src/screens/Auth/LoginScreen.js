@@ -23,7 +23,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { signInWithGoogle } from '../../services/googleAuthService';
 
-const LoginScreen = ({}) => {
+const LoginScreen = ({ setIsAuthenticated }) => {
   const navigation = useNavigation();
 
   const [formData, setFormData] = useState({
@@ -87,12 +87,14 @@ const LoginScreen = ({}) => {
       await AsyncStorage.setItem('token', access_token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
 
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
       setErrors({ emailOrName: '', password: '' });
       setShowSuccessDialog(true);
 
       setTimeout(() => {
         setShowSuccessDialog(false);
-        navigation.replace('ScreenBottomTabs');
+        setIsAuthenticated(true);
       }, 2000);
     } catch (e) {
       console.error('Gagal menyimpan token:', e);

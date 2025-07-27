@@ -1,5 +1,3 @@
-// src/navigation/RootNavigation.js
-
 import React, { useEffect, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -15,6 +13,8 @@ import VerifyOTPScreen from '../screens/Auth/VerifyOTPScreen';
 
 import Header from '../components/Headers/Header';
 import Icon from '../components/Icons/Icon';
+import axios from 'axios';
+import EditDocumentScreen from '../screens/Main/EditDocumentScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -22,6 +22,7 @@ const Tab = createBottomTabNavigator();
 const DocumentsTabIcon = ({ color, size }) => (
   <Icon name="FileText" color={color} size={size} />
 );
+
 const ChatTabIcon = ({ color, size }) => (
   <Icon name="MessageCircle" color={color} size={size} />
 );
@@ -64,9 +65,10 @@ const BottomTabNavigation = () => (
 
 export const RootNavigation = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const checkFirstLaunch = async () => {
+    const init = async () => {
       const hasLaunched = await AsyncStorage.getItem('hasLaunched');
       if (hasLaunched === null) {
         await AsyncStorage.setItem('hasLaunched', 'true');
@@ -74,27 +76,58 @@ export const RootNavigation = () => {
       } else {
         setIsFirstLaunch(false);
       }
+
+      const token = await AsyncStorage.getItem('token');
+      if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+      }
     };
 
-    checkFirstLaunch();
+    init();
   }, []);
 
   if (isFirstLaunch === null) return null;
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      {isFirstLaunch && (
+      {isFirstLaunch && !isAuthenticated && (
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
       )}
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Register" component={RegisterScreen} />
-      <Stack.Screen name="Verify" component={VerifyOTPScreen} />
-      <Stack.Screen name="ScreenBottomTabs" component={BottomTabNavigation} />
-      <Stack.Screen
-        name="ViewDocument"
-        component={DocumentViewerScreen}
-        options={{ headerShown: true }}
-      />
+
+      {!isAuthenticated && (
+        <>
+          <Stack.Screen name="Login">
+            {props => (
+              <LoginScreen {...props} setIsAuthenticated={setIsAuthenticated} />
+            )}
+          </Stack.Screen>
+
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="Verify" component={VerifyOTPScreen} />
+        </>
+      )}
+
+      {isAuthenticated && (
+        <>
+          <Stack.Screen
+            name="ScreenBottomTabs"
+            component={BottomTabNavigation}
+          />
+          <Stack.Screen
+            name="ViewDocument"
+            component={DocumentViewerScreen}
+            options={{ headerShown: true }}
+          />
+          <Stack.Screen
+            name="EditDocument"
+            component={EditDocumentScreen}
+            options={{ headerShown: true }}
+          />
+        </>
+      )}
     </Stack.Navigator>
   );
 };

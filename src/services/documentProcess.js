@@ -11,6 +11,8 @@ export const getFolderContents = async () => {
 
     const data = response.data;
 
+    console.log(response.data);
+
     const mapped = {
       subfolders: data.subfolders.map(sub => ({
         id: sub.id,
