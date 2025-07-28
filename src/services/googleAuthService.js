@@ -17,6 +17,7 @@ export const signInWithGoogle = async ({ handleSuccessfulLogin }) => {
 
     const { token, user, role } = res.data;
 
+    await AsyncStorage.setItem('ID_Token', idToken);
     await AsyncStorage.setItem('token', token);
     await AsyncStorage.setItem('role', role);
     await AsyncStorage.setItem('user', JSON.stringify(user));

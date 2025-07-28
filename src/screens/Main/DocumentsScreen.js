@@ -9,44 +9,51 @@ import {
   TouchableOpacity,
   RefreshControl,
   View,
-  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
-import FileViewer from 'react-native-file-viewer';
 import { useNavigation } from '@react-navigation/native';
+import Share from 'react-native-share';
+import axios from 'axios';
+
+import { API_URL } from '@env';
 
 import Accordion from '../../components/Others/Accordion';
 import { Icon } from '../../components/Icons/Icon';
 import Option from '../../components/Options/Option';
 import ProgressBar from '../../components/Loaders/ProgressBar';
-
-import { preloadAllDocuments } from '../../services/documentCacheManager';
-import { requestAndroidPermission } from '../../utils/requestPermission';
-import { fetchConvertedPdfUrl } from '../../services/docxProcessToPdf';
 import FloatingActionButton from '../../components/Buttons/FloatingActionButton';
 import InputSelect from '../../components/Inputs/InputSelect';
-// import { API_URL } from '@env';
+import ErrorDialog from '../../components/Alerts/ErrorDialog';
+import SuccessDialog from '../../components/Alerts/SuccessDialog';
+
+import { preloadAllDocuments } from '../../services/documentCacheManager';
 
 const DocumentsScreen = () => {
+  const navigation = useNavigation();
+
   const [folders, setFolders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [initialLoadProgress, setInitialLoadProgress] = useState(0);
+
   const [showOption, setShowOption] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
+
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState(null);
-  const [showInputSelect, setShowInputSelect] = useState(false);
 
-  // const [isAdmin, setIsAdmin] = useState(false);
-  // const [isUser, setIsUser] = useState(false);
+  const [selectMode, setSelectMode] = useState(null);
+  const [showSelectModal, setShowSelectModal] = useState(false);
 
-  const navigation = useNavigation();
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
 
   const formatDocName = name => {
-    if (!name) return '(untitled)';
+    if (!name) return '(Untitled)';
     return name
       .replace(/\.[^/.]+$/, '')
       .replace(/[-_]/g, ' ')
@@ -58,71 +65,103 @@ const DocumentsScreen = () => {
       .join(' ');
   };
 
-  const openDownloadedFile = async filePath => {
+  const downloadAndShareFile = async doc => {
     try {
-      const exists = await RNFS.exists(filePath);
-      if (!exists) {
-        Alert.alert('File Not Found', 'File does not exist at the given path.');
-        return;
-      }
-      await FileViewer.open(filePath, { showOpenWithDialog: true });
-    } catch (e) {
-      console.error('File open error:', e);
-      Alert.alert('Error', 'Unable to open the file.');
-    }
-  };
-
-  const downloadFile = async (docUrl, fileName) => {
-    const outputPath =
-      Platform.OS === 'android'
-        ? `${RNFS.DownloadDirectoryPath}/${fileName}.pdf`
-        : `${RNFS.DocumentDirectoryPath}/${fileName}.pdf`;
-
-    try {
-      if (Platform.OS === 'android') {
-        const granted = await requestAndroidPermission();
-        if (!granted)
-          return Alert.alert('Permission denied', 'Cannot access storage.');
-      }
-
-      const fileUrl = await fetchConvertedPdfUrl(docUrl);
-      if (!fileUrl) return Alert.alert('Download Failed', 'PDF URL not found.');
+      const fileId = doc.id;
+      const fileName = doc.name || 'Untitled Document';
+      const downloadUrl = `${API_URL}/api/download-docs?file_id=${fileId}`;
+      const localPath = `${RNFS.DocumentDirectoryPath}/${fileName}.pdf`;
 
       setIsDownloading(true);
       setDownloadProgress(0);
 
-      const result = await RNFS.downloadFile({
-        fromUrl: fileUrl,
-        toFile: outputPath,
+      const download = RNFS.downloadFile({
+        fromUrl: downloadUrl,
+        toFile: localPath,
         progress: data => {
-          const percent = Math.floor(
+          const progress = Math.floor(
             (data.bytesWritten / data.contentLength) * 100,
           );
-          setDownloadProgress(percent);
+          setDownloadProgress(progress);
         },
+        begin: () => setDownloadProgress(0),
         progressDivider: 1,
-      }).promise;
+      });
+
+      const result = await download.promise;
+      setIsDownloading(false);
+      setDownloadProgress(0);
 
       if (result.statusCode === 200) {
-        Alert.alert('Download Complete', `File saved to:\n${outputPath}`, [
-          { text: 'OK' },
-          { text: 'Open', onPress: () => openDownloadedFile(outputPath) },
-        ]);
+        await Share.open({
+          url: 'file://' + localPath,
+          type: 'application/pdf',
+          saveToFiles: true,
+          failOnCancel: false,
+        });
+        setSuccessMessage('Dokumen berhasil diunduh dan siap dibagikan.');
+        setShowSuccess(true);
       } else {
-        Alert.alert('Download Failed', `Status code: ${result.statusCode}`);
+        setErrorMessage(`Download gagal. Status: ${result.statusCode}`);
+        setShowError(true);
       }
     } catch (err) {
-      console.error('Download error:', err);
-      Alert.alert('Error', 'Failed to download file.');
-    } finally {
       setIsDownloading(false);
+      setDownloadProgress(0);
+      console.error('Download error:', err.message);
+      setErrorMessage(err.message);
+      setShowError(true);
     }
+  };
+
+  const deleteDocument = async fileId => {
+    try {
+      const response = await axios.delete(`${API_URL}/api/delete-docs`, {
+        data: { file_id: fileId },
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      const data = response.data;
+      setSuccessMessage(data.message || 'Dokumen berhasil dihapus.');
+      setShowSuccess(true);
+    } catch (error) {
+      console.error('Delete error:', error);
+      const message =
+        error.response?.data?.message ||
+        'Terjadi kesalahan saat menghapus dokumen.';
+      setErrorMessage(message);
+      setShowError(true);
+    }
+  };
+
+  const handleDocAction = async doc => {
+    if (!doc) return;
+
+    if (selectMode === 'edit') {
+      if (doc?.downloadUrl || doc?.webViewLink) {
+        navigation.navigate('EditDocument', {
+          url: doc.downloadUrl || doc.webViewLink,
+          title: doc.name || 'Untitled Document',
+        });
+      }
+    } else if (selectMode === 'download') {
+      await downloadAndShareFile(doc);
+    } else if (selectMode === 'delete') {
+      if (doc?.id) {
+        await deleteDocument(doc.id);
+        await loadFolders();
+      }
+    }
+
+    setSelectMode(null);
+    setShowSelectModal(false);
   };
 
   const loadFolders = async () => {
     try {
       const folderMapStr = await AsyncStorage.getItem('doc-folder-map');
       if (!folderMapStr) return;
+
       const folderMap = JSON.parse(folderMapStr);
       const folderList = Object.entries(folderMap).map(
         ([folderName, docs]) => ({
@@ -130,6 +169,7 @@ const DocumentsScreen = () => {
           docs,
         }),
       );
+
       setFolders(folderList);
     } catch (e) {
       console.error('Error loading folders:', e);
@@ -138,7 +178,7 @@ const DocumentsScreen = () => {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadFolders();
+    await preloadAllDocuments();
     setRefreshing(false);
   };
 
@@ -161,6 +201,7 @@ const DocumentsScreen = () => {
 
   const renderProgress = () => {
     if (!loading && !isDownloading) return null;
+
     const progress = loading ? initialLoadProgress : downloadProgress;
     const label = loading
       ? 'Preparing documents...'
@@ -173,6 +214,42 @@ const DocumentsScreen = () => {
       </View>
     );
   };
+
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    dialogContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 999,
+    },
+    scroll: {
+      padding: 16,
+    },
+    itemContainer: {
+      paddingVertical: 8,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    itemText: {
+      fontSize: 14,
+      color: '#333',
+    },
+    noItemText: {
+      fontStyle: 'italic',
+      color: '#666',
+    },
+    progressContainer: {
+      paddingHorizontal: 16,
+      paddingTop: 10,
+    },
+  });
 
   const renderFolders = () =>
     folders.map(folder => (
@@ -208,21 +285,24 @@ const DocumentsScreen = () => {
       </Accordion>
     ));
 
-  const styles = StyleSheet.create({
-    container: { flex: 1 },
-    scroll: { padding: 16 },
-    itemContainer: {
-      paddingVertical: 8,
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-    },
-    itemText: { fontSize: 14, color: '#333' },
-    noItemText: { fontStyle: 'italic', color: '#666' },
-    progressContainer: { paddingHorizontal: 16, paddingTop: 10 },
-  });
-
   return (
     <SafeAreaView style={styles.container}>
+      {showSuccess && (
+        <View style={styles.dialogContainer}>
+          <SuccessDialog
+            message={successMessage}
+            onHide={() => setShowSuccess(false)}
+          />
+        </View>
+      )}
+      {showError && (
+        <ErrorDialog
+          visible={showError}
+          message={errorMessage}
+          onHide={() => setShowError(false)}
+        />
+      )}
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
@@ -249,25 +329,21 @@ const DocumentsScreen = () => {
           )}"?`}
           option1Text="Edit"
           option2Text="Download"
-          onOption1={async () => {
+          onOption1={() => {
             setShowOption(false);
-            // setSelectedDoc(null);
-            // navigation.navigate('ViewDocument', { doc: selectedDoc });
             if (selectedDoc?.webViewLink) {
               navigation.navigate('EditDocument', {
                 url: selectedDoc.webViewLink,
-                title: selectedDoc.name || 'Dokumen',
+                title: selectedDoc.name || 'Untitled Document',
               });
             }
           }}
-          onOption2={() => {
-            const docUrl = selectedDoc.url;
-            const fileName = selectedDoc.title || 'untitled';
-            downloadFile(docUrl, fileName);
+          onOption2={async () => {
+            await downloadAndShareFile(selectedDoc);
             setShowOption(false);
-            setSelectedDoc(null);
           }}
         />
+
         <FloatingActionButton
           mainIcon={{ name: 'Plus', color: '#fff', size: 24 }}
           actions={[
@@ -279,25 +355,28 @@ const DocumentsScreen = () => {
             },
             {
               iconName: 'Pencil',
-              onPress: () => setShowInputSelect(true),
+              onPress: () => {
+                setSelectMode('edit');
+                setShowSelectModal(true);
+              },
             },
             {
               iconName: 'Trash',
-              onPress: () => console.log('Hapus'),
-            },
-            {
-              iconName: 'Eye',
-              onPress: () => console.log('Bagikan'),
+              onPress: () => {
+                setSelectMode('delete');
+                setShowSelectModal(true);
+              },
             },
           ]}
         />
 
         <InputSelect
-          visible={showInputSelect}
-          onClose={() => setShowInputSelect(false)}
+          visible={showSelectModal}
+          onClose={() => setShowSelectModal(false)}
           title="Select Document"
-          message="Search and select a document below to edit:"
+          message={`Choose a document to ${selectMode}`}
           folders={folders}
+          onSelect={handleDocAction}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

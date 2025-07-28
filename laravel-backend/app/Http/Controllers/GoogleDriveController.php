@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 
 class GoogleDriveController extends Controller
 {
-   public function getDriveContents(Request $request)
+   public function getDriveContents()
 {
     $client = GoogleTokenService::getAuthorizedClient();
     $drive = new \Google_Service_Drive($client);
@@ -111,5 +111,78 @@ class GoogleDriveController extends Controller
             ], 500);
         }
     }
+
+    public function downloadGoogleDocs(Request $request)
+{
+    $request->validate([
+        'file_id' => 'required|string',
+    ]);
+
+    $fileId = $request->input('file_id');
+
+    try {
+        $client = GoogleTokenService::getAuthorizedClient(); 
+        $drive = new \Google_Service_Drive($client);
+
+        $file = $drive->files->get($fileId, ['fields' => 'name']);
+
+        $fileName = $file->name ?? 'downloaded';
+        $fileName .= '.pdf'; 
+
+        $exportUrl = "https://www.googleapis.com/drive/v3/files/{$fileId}/export?mimeType=application/pdf";
+
+        $httpClient = new \GuzzleHttp\Client();
+
+        $response = $httpClient->get($exportUrl, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $client->getAccessToken()['access_token'],
+            ],
+            'stream' => true,
+        ]);
+
+        return response()->stream(function () use ($response) {
+            echo $response->getBody()->getContents();
+        }, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Gagal mengunduh dokumen.',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+
+    public function deleteGoogleDocs(Request $request)
+{
+    $request->validate([
+        'file_id' => 'required|string',
+    ]);
+
+    $fileId = $request->input('file_id');
+
+    try {
+        $client = GoogleTokenService::getAuthorizedClient();
+        $drive = new \Google_Service_Drive($client);
+
+        $drive->files->delete($fileId);
+
+        return response()->json([
+            'message' => 'File berhasil dihapus.'
+        ]);
+    } catch (\Google_Service_Exception $e) {
+        return response()->json([
+            'error' => 'Gagal menghapus file.',
+            'details' => $e->getMessage()
+        ], 500);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Terjadi kesalahan tak terduga.',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+}
+
 
 }

@@ -10,7 +10,14 @@ import {
 } from 'react-native';
 import Accordion from '../Others/Accordion';
 
-const InputSelect = ({ visible, onClose, title, message, folders }) => {
+const InputSelect = ({
+  visible,
+  onClose,
+  onSelect,
+  title,
+  message,
+  folders,
+}) => {
   const [search, setSearch] = useState('');
   const [expandedFolder, setExpandedFolder] = useState(null);
 
@@ -64,13 +71,14 @@ const InputSelect = ({ visible, onClose, title, message, folders }) => {
     closeButton: {
       marginTop: 12,
       alignSelf: 'center',
-      backgroundColor: '#ccc',
+      backgroundColor: '#4AA8EA',
       paddingHorizontal: 16,
       paddingVertical: 8,
       borderRadius: 6,
     },
     closeText: {
       fontWeight: 'bold',
+      color: 'white',
     },
   });
 
@@ -104,8 +112,8 @@ const InputSelect = ({ visible, onClose, title, message, folders }) => {
                       key={idx}
                       style={styles.docItem}
                       onPress={() => {
-                        // misalnya: console.log('Selected:', doc);
-                        onClose(); // bisa lanjut diproses ke navigasi, dsb
+                        onSelect(doc);
+                        onClose();
                       }}
                     >
                       <Text>{doc.title || doc.name}</Text>

@@ -12,6 +12,8 @@ Route::post('/auth/google', [GoogleAuthController::class, 'handleSignInWithGoogl
 Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
 Route::get('/drive-contents', [GoogleDriveController::class, 'getDriveContents']);
 Route::get('/edit-docs', [GoogleDriveController::class, 'editGoogleDocs']);
+Route::get('/download-docs', [GoogleDriveController::class, 'downloadGoogleDocs']);
+Route::delete('/delete-docs', [GoogleDriveController::class, 'deleteGoogleDocs']);
 
 Route::middleware(['auth:api'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);

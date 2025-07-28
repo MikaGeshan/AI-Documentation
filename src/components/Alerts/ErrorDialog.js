@@ -79,7 +79,7 @@ const ErrorDialog = ({ message, onHide }) => {
           },
         ]}
       >
-        <Icon name="OctagonAlert" size={80} color="yellow" />
+        <Icon name="OctagonAlert" size={80} color="red" />
         <Text style={styles.message}>{message}</Text>
       </Animated.View>
     </View>
