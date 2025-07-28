@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import Icon from '../Icons/Icon';
+import { Icon } from '../Icons/Icon';
 
 const SuccessDialog = ({ message, onHide }) => {
   const opacityAnim = useRef(new Animated.Value(0)).current;

@@ -15,7 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import Button from '../../components/Buttons/Button';
 import { API_URL } from '@env';
 import Hyperlink from '../../components/Buttons/Hyperlink';
-import Icon from '../../components/Icons/Icon';
+import { Icon } from '../../components/Icons/Icon';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import axios from 'axios';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';

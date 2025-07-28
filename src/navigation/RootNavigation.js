@@ -12,7 +12,7 @@ import RegisterScreen from '../screens/Auth/RegisterScreen';
 import VerifyOTPScreen from '../screens/Auth/VerifyOTPScreen';
 
 import Header from '../components/Headers/Header';
-import Icon from '../components/Icons/Icon';
+import { Icon } from '../components/Icons/Icon';
 import axios from 'axios';
 import EditDocumentScreen from '../screens/Main/EditDocumentScreen';
 

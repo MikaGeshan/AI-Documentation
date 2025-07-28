@@ -17,14 +17,16 @@ import FileViewer from 'react-native-file-viewer';
 import { useNavigation } from '@react-navigation/native';
 
 import Accordion from '../../components/Others/Accordion';
-import Icon from '../../components/Icons/Icon';
-import Option from '../../components/Others/Option';
+import { Icon } from '../../components/Icons/Icon';
+import Option from '../../components/Options/Option';
 import ProgressBar from '../../components/Loaders/ProgressBar';
 
 import { preloadAllDocuments } from '../../services/documentCacheManager';
 import { requestAndroidPermission } from '../../utils/requestPermission';
 import { fetchConvertedPdfUrl } from '../../services/docxProcessToPdf';
-import { API_URL } from '@env';
+import FloatingActionButton from '../../components/Buttons/FloatingActionButton';
+import InputSelect from '../../components/Inputs/InputSelect';
+// import { API_URL } from '@env';
 
 const DocumentsScreen = () => {
   const [folders, setFolders] = useState([]);
@@ -36,6 +38,8 @@ const DocumentsScreen = () => {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
   const [expandedFolder, setExpandedFolder] = useState(null);
+  const [showInputSelect, setShowInputSelect] = useState(false);
+
   // const [isAdmin, setIsAdmin] = useState(false);
   // const [isUser, setIsUser] = useState(false);
 
@@ -263,6 +267,37 @@ const DocumentsScreen = () => {
             setShowOption(false);
             setSelectedDoc(null);
           }}
+        />
+        <FloatingActionButton
+          mainIcon={{ name: 'Plus', color: '#fff', size: 24 }}
+          actions={[
+            {
+              iconName: 'FilePlus',
+              iconColor: '#fff',
+              iconSize: 20,
+              onPress: () => console.log('Buat dokumen'),
+            },
+            {
+              iconName: 'Pencil',
+              onPress: () => setShowInputSelect(true),
+            },
+            {
+              iconName: 'Trash',
+              onPress: () => console.log('Hapus'),
+            },
+            {
+              iconName: 'Eye',
+              onPress: () => console.log('Bagikan'),
+            },
+          ]}
+        />
+
+        <InputSelect
+          visible={showInputSelect}
+          onClose={() => setShowInputSelect(false)}
+          title="Select Document"
+          message="Search and select a document below to edit:"
+          folders={folders}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

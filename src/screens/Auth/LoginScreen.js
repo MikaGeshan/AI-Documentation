@@ -16,7 +16,7 @@ import { API_URL } from '@env';
 import InputText from '../../components/Inputs/InputText';
 import Button from '../../components/Buttons/Button';
 import Hyperlink from '../../components/Buttons/Hyperlink';
-import Icon from '../../components/Icons/Icon';
+import { Icon } from '../../components/Icons/Icon';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';

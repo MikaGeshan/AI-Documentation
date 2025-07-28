@@ -5,7 +5,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import Icon from '../Icons/Icon';
+import { Icon } from '../Icons/Icon';
 
 const Accordion = ({ title, children, isExpanded, onToggle }) => {
   const [contentHeight, setContentHeight] = useState(0);
