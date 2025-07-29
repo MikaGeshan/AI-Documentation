@@ -28,9 +28,13 @@ import ErrorDialog from '../../components/Alerts/ErrorDialog';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
 
 import { preloadAllDocuments } from '../../services/documentCacheManager';
+import InputModal from '../../components/Inputs/InputModal';
 
 const DocumentsScreen = () => {
   const navigation = useNavigation();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isUser, setIsUser] = useState(false);
 
   const [folders, setFolders] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -45,6 +49,7 @@ const DocumentsScreen = () => {
   const [expandedFolder, setExpandedFolder] = useState(null);
 
   const [selectMode, setSelectMode] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const [showSelectModal, setShowSelectModal] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState('');
@@ -63,6 +68,24 @@ const DocumentsScreen = () => {
       .filter(Boolean)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  };
+
+  const createFolder = async folderName => {
+    try {
+      const response = await axios.post(`${API_URL}/api/create-folder`, {
+        name: folderName,
+      });
+
+      const data = response.data;
+      console.log(data);
+      setSuccessMessage(data.message || 'Folder berhasil dibuat.');
+      setShowSuccess(true);
+      setRefreshing(true);
+    } catch (err) {
+      console.error('Error creating folder:', err);
+      setShowError(true);
+      setErrorMessage(err.response?.data?.message || err.message);
+    }
   };
 
   const downloadAndShareFile = async doc => {
@@ -131,20 +154,15 @@ const DocumentsScreen = () => {
         'Terjadi kesalahan saat menghapus dokumen.';
       setErrorMessage(message);
       setShowError(true);
+    } finally {
+      setRefreshing(false);
     }
   };
 
   const handleDocAction = async doc => {
     if (!doc) return;
 
-    if (selectMode === 'edit') {
-      if (doc?.downloadUrl || doc?.webViewLink) {
-        navigation.navigate('EditDocument', {
-          url: doc.downloadUrl || doc.webViewLink,
-          title: doc.name || 'Untitled Document',
-        });
-      }
-    } else if (selectMode === 'download') {
+    if (selectMode === 'download') {
       await downloadAndShareFile(doc);
     } else if (selectMode === 'delete') {
       if (doc?.id) {
@@ -183,20 +201,25 @@ const DocumentsScreen = () => {
   };
 
   useEffect(() => {
-    const load = async () => {
+    const initialize = async () => {
       try {
+        const getRole = await AsyncStorage.getItem('role');
+        setIsUser(getRole === 'user');
+        setIsAdmin(getRole === 'admin');
+
         setInitialLoadProgress(20);
         await preloadAllDocuments();
         setInitialLoadProgress(60);
         await loadFolders();
         setInitialLoadProgress(100);
       } catch (e) {
-        console.error('Failed to preload:', e);
+        console.error('Failed to initialize:', e);
       } finally {
         setTimeout(() => setLoading(false), 300);
       }
     };
-    load();
+
+    initialize();
   }, []);
 
   const renderProgress = () => {
@@ -327,14 +350,18 @@ const DocumentsScreen = () => {
           message={`What do you want to do with "${formatDocName(
             selectedDoc?.title || selectedDoc?.name,
           )}"?`}
-          option1Text="Edit"
+          option1Text="View"
           option2Text="Download"
           onOption1={() => {
             setShowOption(false);
-            if (selectedDoc?.webViewLink) {
-              navigation.navigate('EditDocument', {
-                url: selectedDoc.webViewLink,
-                title: selectedDoc.name || 'Untitled Document',
+            if (selectedDoc?.id) {
+              const fileId = selectedDoc.id;
+              const title = selectedDoc.name || 'Untitled Document';
+              const pdfUrl = `${API_URL}/api/view-docs?file_id=${fileId}`;
+
+              navigation.navigate('ViewDocument', {
+                url: pdfUrl,
+                title,
               });
             }
           }}
@@ -344,30 +371,39 @@ const DocumentsScreen = () => {
           }}
         />
 
-        <FloatingActionButton
-          mainIcon={{ name: 'Plus', color: '#fff', size: 24 }}
-          actions={[
-            {
-              iconName: 'FilePlus',
-              iconColor: '#fff',
-              iconSize: 20,
-              onPress: () => console.log('Buat dokumen'),
-            },
-            {
-              iconName: 'Pencil',
-              onPress: () => {
-                setSelectMode('edit');
-                setShowSelectModal(true);
+        {isAdmin && (
+          <FloatingActionButton
+            mainIcon={{ name: 'Plus', color: '#fff', size: 30 }}
+            actions={[
+              {
+                iconName: 'FilePlus',
+                iconColor: '#fff',
+                iconSize: 20,
+                onPress: () => {
+                  setModalVisible(true);
+                },
               },
-            },
-            {
-              iconName: 'Trash',
-              onPress: () => {
-                setSelectMode('delete');
-                setShowSelectModal(true);
+              {
+                iconName: 'Trash',
+                onPress: () => {
+                  setSelectMode('delete');
+                  setShowSelectModal(true);
+                },
               },
-            },
-          ]}
+            ]}
+          />
+        )}
+
+        <InputModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+          onSubmit={value => {
+            createFolder(value);
+            setModalVisible(false);
+          }}
+          message="Create Folder"
+          placeholder="Enter new folder name"
+          buttonColor="#4AA8EA"
         />
 
         <InputSelect

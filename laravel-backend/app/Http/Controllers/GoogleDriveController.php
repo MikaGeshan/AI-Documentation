@@ -70,46 +70,6 @@ class GoogleDriveController extends Controller
         'folder' => $mainFolder,
         'subfolders' => $subfolderData
     ]);
-}
-
-    public function editGoogleDocs(Request $request)
-    {
-        $request->validate([
-            'access_token' => 'required|string',
-            'document_id' => 'required|string',
-            'new_text' => 'required|string',
-        ]);
-
-        $accessToken = $request->input('access_token');
-        $documentId = $request->input('document_id');
-        $newText = $request->input('new_text');
-
-        try {
-            $client = new Client();
-            $client->setAccessToken($accessToken);
-
-            $docsService = new Docs($client);
-
-            $requests = [
-                new DocsRequest([
-                    'insertText' => [
-                        'location' => ['index' => 1], 
-                        'text' => $newText
-                    ]
-                ])
-            ];
-
-            $docsService->documents->batchUpdate($documentId, new BatchUpdateDocumentRequest([
-                'requests' => $requests
-            ]));
-
-            return response()->json(['message' => 'Dokumen berhasil diedit.']);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Gagal mengedit dokumen.',
-                'details' => $e->getMessage()
-            ], 500);
-        }
     }
 
     public function downloadGoogleDocs(Request $request)
@@ -152,7 +112,7 @@ class GoogleDriveController extends Controller
             'details' => $e->getMessage()
         ], 500);
     }
-}
+    }
 
     public function deleteGoogleDocs(Request $request)
 {
@@ -182,7 +142,86 @@ class GoogleDriveController extends Controller
             'details' => $e->getMessage()
         ], 500);
     }
-}
+    }
+
+    public function createGoogleDriveFolder(Request $request)
+    {
+    $validated = $request->validate([
+        'name' => 'required|string',
+    ]);
+
+    try {
+        $client = GoogleTokenService::getAuthorizedClient();
+        $service = new \Google_Service_Drive($client);
+
+        $parentFolderId = env('GOOGLE_DRIVE_FOLDER_ID'); 
+
+        $folderMetadata = new \Google_Service_Drive_DriveFile([
+            'name' => $validated['name'],
+            'mimeType' => 'application/vnd.google-apps.folder',
+            'parents' => [$parentFolderId],
+        ]);
+
+        $folder = $service->files->create($folderMetadata, [
+            'fields' => 'id, name',
+        ]);
+
+        return response()->json([
+            'message' => 'Folder berhasil dibuat',
+            'folder' => $folder,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Gagal membuat folder.',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+    }
+
+    public function viewGoogleDocsAsPdf(Request $request)
+    {
+    $request->validate([
+        'file_id' => 'required|string',
+    ]);
+
+    $fileId = $request->input('file_id');
+
+    try {
+        $client = GoogleTokenService::getAuthorizedClient(); 
+        $drive = new \Google_Service_Drive($client);
+
+        $file = $drive->files->get($fileId, ['fields' => 'name']);
+
+        $fileName = $file->name ?? 'view';
+        $fileName .= '.pdf';
+
+        $exportUrl = "https://www.googleapis.com/drive/v3/files/{$fileId}/export?mimeType=application/pdf";
+
+        $httpClient = new \GuzzleHttp\Client();
+
+        $response = $httpClient->get($exportUrl, [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $client->getAccessToken()['access_token'],
+            ],
+            'stream' => true,
+        ]);
+
+        return response()->stream(function () use ($response) {
+            echo $response->getBody()->getContents();
+        }, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Gagal menampilkan dokumen sebagai PDF.',
+            'details' => $e->getMessage()
+        ], 500);
+    }
+    }
+
+
+
 
 
 }

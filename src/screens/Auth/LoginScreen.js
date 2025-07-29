@@ -87,7 +87,7 @@ const LoginScreen = ({ setIsAuthenticated }) => {
       await AsyncStorage.setItem('token', access_token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
 
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      axios.defaults.headers.common.Authorization = `Bearer ${access_token}`;
 
       setErrors({ emailOrName: '', password: '' });
       setShowSuccessDialog(true);
@@ -97,7 +97,7 @@ const LoginScreen = ({ setIsAuthenticated }) => {
         setIsAuthenticated(true);
       }, 2000);
     } catch (e) {
-      console.error('Gagal menyimpan token:', e);
+      console.error('Error saving token:', e);
     }
   };
 

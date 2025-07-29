@@ -6,7 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import DocumentsScreen from '../screens/Main/DocumentsScreen';
 import ChatScreen from '../screens/Main/ChatScreen';
-import DocumentViewerScreen from '../screens/Main/DocumentViewerScreen';
 import LoginScreen from '../screens/Auth/LoginScreen';
 import RegisterScreen from '../screens/Auth/RegisterScreen';
 import VerifyOTPScreen from '../screens/Auth/VerifyOTPScreen';
@@ -14,7 +13,7 @@ import VerifyOTPScreen from '../screens/Auth/VerifyOTPScreen';
 import Header from '../components/Headers/Header';
 import { Icon } from '../components/Icons/Icon';
 import axios from 'axios';
-import EditDocumentScreen from '../screens/Main/EditDocumentScreen';
+import ViewDocumentScreen from '../screens/Main/ViewDocumentScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -118,12 +117,7 @@ export const RootNavigation = () => {
           />
           <Stack.Screen
             name="ViewDocument"
-            component={DocumentViewerScreen}
-            options={{ headerShown: true }}
-          />
-          <Stack.Screen
-            name="EditDocument"
-            component={EditDocumentScreen}
+            component={ViewDocumentScreen}
             options={{ headerShown: true }}
           />
         </>
