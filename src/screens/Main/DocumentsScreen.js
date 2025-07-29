@@ -96,11 +96,17 @@ const DocumentsScreen = () => {
       const response = await axios.post(`${API_URL}/api/create-folder`, {
         name,
       });
-      setSuccessMessage(response.data.message || 'Folder berhasil dibuat.');
+
+      setRefreshing(true);
+      await loadFolders();
+      setRefreshing(false);
+
+      setSuccessMessage(response.data.message || 'Folder Created.');
       setShowSuccess(true);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message);
+      setErrorMessage(err.response?.data?.message || 'Error Creating Folder');
       setShowError(true);
+      setRefreshing(false);
     }
   };
 
@@ -122,12 +128,19 @@ const DocumentsScreen = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      setSuccessMessage('Dokumen berhasil diunggah.');
-      setShowSuccess(true);
-      await loadFolders();
+      setUploadModalVisible(false);
+
+      setTimeout(async () => {
+        setRefreshing(true);
+        await loadFolders();
+        setRefreshing(false);
+
+        setSuccessMessage('Document Uploaded.');
+        setShowSuccess(true);
+      }, 400);
     } catch (error) {
       const message =
-        error.response?.data?.message || 'Gagal mengunggah dokumen.';
+        error.response?.data?.message || 'Error Uploading Document.';
       setErrorMessage(message);
       setShowError(true);
     }
@@ -165,14 +178,14 @@ const DocumentsScreen = () => {
           url: 'file://' + localPath,
           type: 'application/pdf',
         });
-        setSuccessMessage('Dokumen berhasil diunduh dan dibagikan.');
+        setSuccessMessage('Document Downloaded.');
         setShowSuccess(true);
       } else {
         throw new Error(`Download gagal. Status: ${result.statusCode}`);
       }
     } catch (err) {
       setIsDownloading(false);
-      setErrorMessage(err.message);
+      setErrorMessage('Error Downloading Document');
       setShowError(true);
     }
   };
@@ -183,10 +196,10 @@ const DocumentsScreen = () => {
         data: { file_id: id },
         headers: { 'Content-Type': 'application/json' },
       });
-      setSuccessMessage('Dokumen berhasil dihapus.');
+      setSuccessMessage('Document Deleted.');
       setShowSuccess(true);
     } catch (err) {
-      setErrorMessage(err.response?.data?.message || err.message);
+      setErrorMessage('Error Deleting Document');
       setShowError(true);
     } finally {
       setRefreshing(false);
