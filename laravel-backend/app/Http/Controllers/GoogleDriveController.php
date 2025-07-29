@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Services\GoogleTokenService;
 use Google\Service\Drive as Google_Service_Drive;
-use Google\Client;
-use Google\Service\Docs;
-use Google\Service\Docs\Request as DocsRequest;
-use Google\Service\Docs\BatchUpdateDocumentRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 
 class GoogleDriveController extends Controller
 {
@@ -220,8 +218,88 @@ class GoogleDriveController extends Controller
     }
     }
 
+    public function convertGoogleDocsToTxt(Request $request)
+    {
+    $request->validate([
+        'file_id' => 'required|string',
+    ]);
 
+    $fileId = $request->input('file_id');
 
+    try {
+        $client = GoogleTokenService::getAuthorizedClient(); 
+        $docsService = new \Google_Service_Docs($client);
+
+        $document = $docsService->documents->get($fileId);
+        $bodyElements = $document->getBody()->getContent();
+
+        $text = '';
+
+        foreach ($bodyElements as $element) {
+            if (isset($element->paragraph)) {
+                $paragraph = $element->getParagraph()->getElements();
+                foreach ($paragraph as $pElement) {
+                    $textRun = $pElement->getTextRun();
+                    if ($textRun) {
+                        $text .= $textRun->getContent();
+                    }
+                }
+            }
+        }
+
+        return response()->json([
+            'file_id' => $fileId,
+            'text' => $text,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => 'Gagal mengonversi Google Docs ke teks.',
+            'details' => $e->getMessage(),
+        ], 500);
+    }
+    }
+
+    public function uploadFileToDrive(Request $request)
+{
+    \Log::info('MASUK uploadFileToDrive');
+    \Log::info($request->all());
+
+    try {
+        // validasi
+        $request->validate([
+            'folder_id' => 'required|string',
+            'file' => 'required|file|mimes:pdf|max:5120',
+        ]);
+
+        $folderId = $request->input('folder_id');
+        $file = $request->file('file');
+
+        $client = GoogleTokenService::getAuthorizedClient();
+        $service = new \Google_Service_Drive($client);
+
+        $driveFile = new \Google_Service_Drive_DriveFile();
+        $driveFile->setName($file->getClientOriginalName());
+        $driveFile->setParents([$folderId]);
+
+        $result = $service->files->create($driveFile, [
+            'data' => file_get_contents($file->getPathname()),
+            'mimeType' => $file->getClientMimeType(),
+            'uploadType' => 'multipart',
+        ]);
+
+        \Log::info('Upload success:', ['id' => $result->id]);
+
+        return response()->json([
+            'message' => 'File berhasil diupload ke Google Drive.',
+            'file_id' => $result->id,
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Upload GAGAL:', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+        return response()->json([
+            'message' => 'Gagal upload file: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 
 
 }

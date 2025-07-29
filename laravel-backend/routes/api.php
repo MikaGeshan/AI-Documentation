@@ -19,6 +19,8 @@ Route::get('/download-docs', [GoogleDriveController::class, 'downloadGoogleDocs'
 Route::get('/view-docs', [GoogleDriveController::class, 'viewGoogleDocsAsPdf']);
 Route::delete('/delete-docs', [GoogleDriveController::class, 'deleteGoogleDocs']);
 Route::post('/create-folder', [GoogleDriveController::class, 'createGoogleDriveFolder']);
+Route::post('/convert-docs', [GoogleDriveController::class, 'convertGoogleDocsToTxt']);
+Route::post('/upload-docs', [GoogleDriveController::class, 'uploadFileToDrive']);
 
 // Auth Middleware
 Route::middleware(['auth:api'])->group(function () {

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
+  FlatList,
 } from 'react-native';
 import Accordion from '../Others/Accordion';
 
@@ -17,18 +18,27 @@ const InputSelect = ({
   title,
   message,
   folders,
+  showOnlyFolders = false,
 }) => {
   const [search, setSearch] = useState('');
   const [expandedFolder, setExpandedFolder] = useState(null);
+  const filteredFolders = folders
+    .map(folder => ({
+      ...folder,
+      docs: showOnlyFolders
+        ? []
+        : folder.docs.filter(doc =>
+            (doc.title || doc.name || '')
+              .toLowerCase()
+              .includes(search.toLowerCase()),
+          ),
+    }))
+    .filter(folder =>
+      showOnlyFolders
+        ? folder.folderName.toLowerCase().includes(search.toLowerCase())
+        : true,
+    );
 
-  const filteredFolders = folders.map(folder => ({
-    ...folder,
-    docs: folder.docs.filter(doc =>
-      (doc.title || doc.name || '')
-        .toLowerCase()
-        .includes(search.toLowerCase()),
-    ),
-  }));
   const styles = StyleSheet.create({
     overlay: {
       flex: 1,
@@ -90,41 +100,66 @@ const InputSelect = ({
           <Text style={styles.message}>{message}</Text>
           <TextInput
             style={styles.input}
-            placeholder="Search documents..."
+            placeholder={
+              showOnlyFolders ? 'Search folders...' : 'Search documents...'
+            }
             value={search}
             onChangeText={setSearch}
           />
-          <ScrollView>
-            {filteredFolders.map(folder => (
-              <Accordion
-                key={folder.folderName}
-                title={folder.folderName}
-                isExpanded={expandedFolder === folder.folderName}
-                onToggle={() =>
-                  setExpandedFolder(prev =>
-                    prev === folder.folderName ? null : folder.folderName,
-                  )
-                }
-              >
-                {folder.docs.length > 0 ? (
-                  folder.docs.map((doc, idx) => (
-                    <TouchableOpacity
-                      key={idx}
-                      style={styles.docItem}
-                      onPress={() => {
-                        onSelect(doc);
-                        onClose();
-                      }}
-                    >
-                      <Text>{doc.title || doc.name}</Text>
-                    </TouchableOpacity>
-                  ))
-                ) : (
-                  <Text style={styles.noItem}>(No matching documents)</Text>
-                )}
-              </Accordion>
-            ))}
-          </ScrollView>
+
+          {showOnlyFolders ? (
+            <FlatList
+              data={filteredFolders}
+              keyExtractor={item => item.folderName}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.docItem}
+                  onPress={() => {
+                    onSelect(item);
+                    onClose();
+                  }}
+                >
+                  <Text>{item.folderName}</Text>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <Text style={styles.noItem}>(No matching folders)</Text>
+              }
+            />
+          ) : (
+            <ScrollView>
+              {filteredFolders.map(folder => (
+                <Accordion
+                  key={folder.folderName}
+                  title={folder.folderName}
+                  isExpanded={expandedFolder === folder.folderName}
+                  onToggle={() =>
+                    setExpandedFolder(prev =>
+                      prev === folder.folderName ? null : folder.folderName,
+                    )
+                  }
+                >
+                  {folder.docs.length > 0 ? (
+                    folder.docs.map((doc, idx) => (
+                      <TouchableOpacity
+                        key={idx}
+                        style={styles.docItem}
+                        onPress={() => {
+                          onSelect(doc);
+                          onClose();
+                        }}
+                      >
+                        <Text>{doc.title || doc.name}</Text>
+                      </TouchableOpacity>
+                    ))
+                  ) : (
+                    <Text style={styles.noItem}>(No matching documents)</Text>
+                  )}
+                </Accordion>
+              ))}
+            </ScrollView>
+          )}
+
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeText}>Close</Text>
           </TouchableOpacity>

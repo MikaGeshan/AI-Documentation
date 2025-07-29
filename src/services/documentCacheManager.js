@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getFolderContents } from './documentProcess';
+import { getFolderContents } from './googleDocumentService';
 
 const CACHE_PREFIX = 'doc-cache-';
 const CACHE_TTL = 1000 * 60 * 60 * 24;

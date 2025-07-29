@@ -1,4 +1,4 @@
-import { getFolderContents } from '../services/documentProcess';
+import { getFolderContents } from '../services/googleDocumentService';
 
 export const isAppListQuery = userMessage => {
   const lower = userMessage.toLowerCase().trim();

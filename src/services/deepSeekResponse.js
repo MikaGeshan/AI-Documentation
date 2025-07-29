@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL } from '@env';
-import { getFolderContents, convertDocument } from './documentProcess';
+import { getFolderContents, convertDocument } from './googleDocumentService';
 import { greetingsAndListApp } from '../utils/greetings';
 import { getCachedDocument, cacheDocument } from './documentCacheManager';
 import { cutText, detectMentionedApps, extractAppNames } from '../utils/text';
@@ -50,20 +50,32 @@ export const deepSeekResponse = async (
     const earlyResponse = await greetingsAndListApp(userMessage);
     if (earlyResponse) return earlyResponse;
 
-    // console.log('earlyResponse:', earlyResponse);
+    console.log('earlyResponse:', earlyResponse);
 
     if (earlyResponse) return earlyResponse;
 
     startStage?.('fetching');
+
     const documents = await getFolderContents();
-    if (!Array.isArray(documents) || documents.length === 0)
+
+    if (
+      !documents ||
+      !Array.isArray(documents.subfolders.files.name) ||
+      documents.subfolders.files.name.length === 0
+    ) {
       return 'No documents available.';
+    }
 
-    const appNames = extractAppNames(documents);
+    console.log('Dokumen yang terambil:', documents.subfolders.files.name);
 
-    const mentionedApps = detectMentionedApps(userMessage, appNames);
+    const documentNames = documents.files.map(file => file.name);
+    console.log('Nama dokumen yang terambil:', documentNames);
+
+    const mentionedApps = detectMentionedApps(userMessage, documentNames);
     if (mentionedApps.length === 0)
       return 'No Applications base on your questions .';
+
+    console.log('Aplikasi yang dituju', mentionedApps);
 
     const matchedDocs = documents
       .filter(doc =>
