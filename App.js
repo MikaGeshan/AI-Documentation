@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { RootNavigation } from './src/navigation/RootNavigation';
-import { navigationRef } from './src/navigation/NavigationService';
 import { configureGoogleSignIn } from './src/services/googleAuthService';
 
 const App = () => {
@@ -10,7 +9,7 @@ const App = () => {
   }, []);
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer>
       <RootNavigation />
     </NavigationContainer>
   );

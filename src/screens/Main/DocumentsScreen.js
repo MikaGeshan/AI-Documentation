@@ -30,52 +30,57 @@ import InputModal from '../../components/Inputs/InputModal';
 import Uploads from '../../components/Others/Uploads';
 
 import { getFolderContents } from '../../services/googleDocumentService';
+import { useDocumentStore } from '../../hooks/useDocumentStore';
+import { useValidationStore } from '../../hooks/useValidationStore';
 
 const DocumentsScreen = () => {
   const navigation = useNavigation();
+  const {
+    folders,
+    selectedDoc,
+    selectedFolderId,
+    loading,
+    initialLoadProgress,
+    isDownloading,
+    downloadProgress,
 
-  const [folders, setFolders] = useState([]);
+    setSelectedDoc,
+    setSelectedFolderId,
+    setDownloadProgress,
+    setIsDownloading,
+  } = useDocumentStore();
+
+  const loadFolders = useDocumentStore(state => state.loadFolders);
+
+  const {
+    isAdmin,
+    showOption,
+    expandedFolder,
+    uploadModalVisible,
+    inputModalVisible,
+    showSelectModal,
+    selectMode,
+    successMessage,
+    showSuccess,
+    errorMessage,
+    showError,
+
+    setShowOption,
+    setExpandedFolder,
+    setUploadModalVisible,
+    setInputModalVisible,
+    setShowSelectModal,
+    setSelectMode,
+    setSuccessMessage,
+    setShowSuccess,
+    setErrorMessage,
+    setShowError,
+  } = useValidationStore();
+
   const [refreshing, setRefreshing] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [initialLoadProgress, setInitialLoadProgress] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  const [showOption, setShowOption] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState(null);
-  const [selectedFolderId, setSelectedFolderId] = useState(null);
-
-  const [downloadProgress, setDownloadProgress] = useState(0);
-  const [isDownloading, setIsDownloading] = useState(false);
-  const [expandedFolder, setExpandedFolder] = useState(null);
-
-  const [selectMode, setSelectMode] = useState(null);
-  const [uploadModalVisible, setUploadModalVisible] = useState(false);
-  const [inputModalVisible, setInputModalVisible] = useState(false);
-  const [showSelectModal, setShowSelectModal] = useState(false);
-
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [showError, setShowError] = useState(false);
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const role = await AsyncStorage.getItem('role');
-        setIsAdmin(role === 'admin');
-
-        setInitialLoadProgress(20);
-        await getFolderContents();
-        setInitialLoadProgress(60);
-        await loadFolders();
-        setInitialLoadProgress(100);
-      } catch (e) {
-        console.error('Failed to initializing:', e);
-      } finally {
-        setTimeout(() => setLoading(false), 300);
-      }
-    };
-    init();
+    useDocumentStore.getState().loadFolders();
   }, []);
 
   const formatDocName = name => {
@@ -220,23 +225,6 @@ const DocumentsScreen = () => {
     setShowSelectModal(false);
   };
 
-  const loadFolders = async () => {
-    try {
-      const data = await getFolderContents();
-      if (!data?.subfolders) return;
-
-      const folderList = data.subfolders.map(sub => ({
-        id: sub.id,
-        folderName: sub.name,
-        docs: sub.files || [],
-      }));
-
-      setFolders(folderList);
-    } catch (e) {
-      console.error('Error loading folders:', e);
-    }
-  };
-
   const onRefresh = async () => {
     try {
       setRefreshing(true);
@@ -268,39 +256,41 @@ const DocumentsScreen = () => {
     );
   };
 
-  const renderFolders = () =>
-    folders.map(folder => (
-      <Accordion
-        key={folder.id}
-        title={folder.folderName}
-        isExpanded={expandedFolder === folder.folderName}
-        onToggle={() =>
-          setExpandedFolder(prev =>
-            prev === folder.folderName ? null : folder.folderName,
-          )
-        }
-      >
-        {folder.docs.length > 0 ? (
-          folder.docs.map((doc, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={styles.itemContainer}
-              onPress={() => {
-                setSelectedDoc(doc);
-                setTimeout(() => setShowOption(true), 100);
-              }}
-            >
-              <Text style={styles.itemText}>
-                {formatDocName(doc.title || doc.name)}
-              </Text>
-              <Icon name="Ellipsis" size={16} color="#4aa8ea" />
-            </TouchableOpacity>
-          ))
-        ) : (
-          <Text style={styles.noItemText}>(No documents)</Text>
-        )}
-      </Accordion>
-    ));
+  const renderFolders = () => {
+    return folders.map(folder => {
+      const isThisExpanded = expandedFolder === folder.id;
+      return (
+        <Accordion
+          key={folder.id}
+          title={folder.folderName}
+          isExpanded={!!isThisExpanded}
+          onToggle={() =>
+            setExpandedFolder(expandedFolder === folder.id ? null : folder.id)
+          }
+        >
+          {Array.isArray(folder.docs) && folder.docs.length > 0 ? (
+            folder.docs.map((doc, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={styles.itemContainer}
+                onPress={() => {
+                  setSelectedDoc(doc);
+                  setTimeout(() => setShowOption(true), 100);
+                }}
+              >
+                <Text style={styles.itemText}>
+                  {formatDocName(doc.title || doc.name)}
+                </Text>
+                <Icon name="Ellipsis" size={16} color="#4aa8ea" />
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={styles.noItemText}>(No documents)</Text>
+          )}
+        </Accordion>
+      );
+    });
+  };
 
   const styles = StyleSheet.create({
     container: {

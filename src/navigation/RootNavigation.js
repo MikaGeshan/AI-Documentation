@@ -14,6 +14,7 @@ import Header from '../components/Headers/Header';
 import { Icon } from '../components/Icons/Icon';
 import axios from 'axios';
 import ViewDocumentScreen from '../screens/Main/ViewDocumentScreen';
+import useAuthStore from '../hooks/useAuthStore';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -64,7 +65,7 @@ const BottomTabNavigation = () => (
 
 export const RootNavigation = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { isAuthenticated, hydrateFromStorage, hydrated } = useAuthStore();
 
   useEffect(() => {
     const init = async () => {
@@ -76,19 +77,13 @@ export const RootNavigation = () => {
         setIsFirstLaunch(false);
       }
 
-      const token = await AsyncStorage.getItem('token');
-      if (token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
+      await hydrateFromStorage();
     };
 
     init();
-  }, []);
+  }, [hydrateFromStorage]);
 
-  if (isFirstLaunch === null) return null;
+  if (isFirstLaunch === null || !hydrated) return null;
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -98,12 +93,7 @@ export const RootNavigation = () => {
 
       {!isAuthenticated && (
         <>
-          <Stack.Screen name="Login">
-            {props => (
-              <LoginScreen {...props} setIsAuthenticated={setIsAuthenticated} />
-            )}
-          </Stack.Screen>
-
+          <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Verify" component={VerifyOTPScreen} />
         </>

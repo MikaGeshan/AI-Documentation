@@ -9,7 +9,9 @@ import { Icon } from '../Icons/Icon';
 
 const Accordion = ({ title, children, isExpanded, onToggle }) => {
   const [contentHeight, setContentHeight] = useState(0);
-  const expandedShared = useSharedValue(isExpanded);
+
+  // ✅ ensure boolean state
+  const expandedShared = useSharedValue(!!isExpanded);
 
   const animatedStyle = useAnimatedStyle(() => ({
     height: withTiming(expandedShared.value ? contentHeight : 0, {
@@ -19,11 +21,11 @@ const Accordion = ({ title, children, isExpanded, onToggle }) => {
   }));
 
   useEffect(() => {
-    expandedShared.value = isExpanded;
-  }, [isExpanded, expandedShared]);
+    expandedShared.value = !!isExpanded;
+  }, [isExpanded]);
 
   const toggleAccordion = () => {
-    onToggle();
+    onToggle?.(); // optional chaining for safety
   };
 
   const onLayoutContent = event => {
@@ -71,7 +73,7 @@ const Accordion = ({ title, children, isExpanded, onToggle }) => {
         />
       </TouchableOpacity>
 
-      <Animated.View style={[animatedStyle]}>
+      <Animated.View style={animatedStyle}>
         <View onLayout={onLayoutContent} style={styles.contentWrapper}>
           {children}
         </View>

@@ -19,11 +19,12 @@ import Hyperlink from '../../components/Buttons/Hyperlink';
 import { Icon } from '../../components/Icons/Icon';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import axios from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { signInWithGoogle } from '../../services/googleAuthService';
+import useAuthStore from '../../hooks/useAuthStore';
 
-const LoginScreen = ({ setIsAuthenticated }) => {
+const LoginScreen = () => {
+  const { login } = useAuthStore();
   const navigation = useNavigation();
 
   const [formData, setFormData] = useState({
@@ -82,23 +83,14 @@ const LoginScreen = ({ setIsAuthenticated }) => {
 
   const handleSuccessfulLogin = async data => {
     const { access_token, user } = data;
+    await login({ access_token, user });
 
-    try {
-      await AsyncStorage.setItem('token', access_token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
+    setErrors({ emailOrName: '', password: '' });
+    setShowSuccessDialog(true);
 
-      axios.defaults.headers.common.Authorization = `Bearer ${access_token}`;
-
-      setErrors({ emailOrName: '', password: '' });
-      setShowSuccessDialog(true);
-
-      setTimeout(() => {
-        setShowSuccessDialog(false);
-        setIsAuthenticated(true);
-      }, 2000);
-    } catch (e) {
-      console.error('Error saving token:', e);
-    }
+    setTimeout(() => {
+      setShowSuccessDialog(false);
+    }, 2000);
   };
 
   const handleLoginError = data => {
