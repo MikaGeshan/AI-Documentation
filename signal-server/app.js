@@ -24,7 +24,7 @@ io.on('connection', socket => {
   socket.on('register', userId => {
     userToSocket[userId] = socket.id;
     socketToUser[socket.id] = userId;
-    console.log(`🔐 Registered user ${userId} with socket ${socket.id}`);
+    console.log(`Registered user ${userId} with socket ${socket.id}`);
 
     if (pendingSignals[userId]) {
       pendingSignals[userId].forEach(data => {
@@ -43,7 +43,7 @@ io.on('connection', socket => {
         pendingSignals[targetUserId] = [];
       }
       pendingSignals[targetUserId].push(data);
-      console.log(`📥 Stored signal for ${targetUserId}`);
+      console.log(`Stored signal for ${targetUserId}`);
     }
   });
 
