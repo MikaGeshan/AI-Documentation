@@ -472,7 +472,6 @@ const DocumentsScreen = () => {
         />
       </KeyboardAvoidingView>
 
-      <Button text={'Caller'} onPress={() => navigation.navigate('Caller')} />
       <Button
         text={'Receive'}
         onPress={() => navigation.navigate('Receiver')}

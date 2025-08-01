@@ -1,35 +1,27 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { RTCView } from 'react-native-webrtc';
+import ButtonCall from '../../components/Buttons/ButtonCall';
 
-const CallLayout = ({ localStream, remoteStream, children }) => {
+const CallLayout = ({
+  localStream,
+  remoteStream,
+  children,
+  onCallColor,
+  onPressCall,
+  onPressOutput,
+  onPressMute,
+}) => {
   useEffect(() => {
     console.log('📹 Local Stream:', localStream);
     console.log('📺 Remote Stream:', remoteStream);
   }, [localStream, remoteStream]);
-
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: '#000',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    remote: {
-      width: '100%',
-      height: '100%',
-      position: 'absolute',
-    },
-    local: {
-      position: 'absolute',
-      width: 120,
-      height: 180,
-      top: 30,
-      right: 20,
-      borderWidth: 2,
-      borderColor: '#fff',
-    },
-  });
 
   const renderStream = (stream, style, isLocal = false) => {
     try {
@@ -41,7 +33,7 @@ const CallLayout = ({ localStream, remoteStream, children }) => {
         <RTCView
           key={streamURL}
           streamURL={streamURL}
-          style={[style, { backgroundColor: isLocal ? 'green' : 'red' }]}
+          style={[style]}
           objectFit="cover"
           mirror={isLocal}
         />
@@ -52,12 +44,84 @@ const CallLayout = ({ localStream, remoteStream, children }) => {
     }
   };
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#000',
+    },
+    remote: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    local: {
+      position: 'absolute',
+      top: 40,
+      right: 20,
+      width: 120,
+      height: 180,
+      borderWidth: 2,
+      borderColor: '#fff',
+      borderRadius: 8,
+      overflow: 'hidden',
+      zIndex: 10,
+    },
+    bottomArea: {
+      position: 'absolute',
+      bottom: 20,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+    },
+    buttonContainer: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    buttonSpacing: {
+      marginHorizontal: 8,
+    },
+  });
+
   return (
-    <View style={styles.container}>
-      {remoteStream ? renderStream(remoteStream, styles.remote, false) : null}
-      {localStream ? renderStream(localStream, styles.local, true) : null}
-      {children}
-    </View>
+    <SafeAreaView style={styles.container}>
+      {remoteStream && renderStream(remoteStream, styles.remote)}
+
+      {localStream && renderStream(localStream, styles.local, true)}
+
+      <KeyboardAvoidingView
+        style={styles.bottomArea}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <View style={styles.buttonContainer}>
+          <View style={styles.buttonSpacing}>
+            <ButtonCall
+              name="Mic"
+              backgroundColor="rgba(0, 0, 0, 0.4)"
+              onPress={onPressMute}
+            />
+          </View>
+          <View style={styles.buttonSpacing}>
+            <ButtonCall
+              name="Phone"
+              backgroundColor={onCallColor}
+              onPress={onPressCall}
+            />
+          </View>
+          <View style={styles.buttonSpacing}>
+            <ButtonCall
+              name="Volume2"
+              backgroundColor="rgba(0, 0, 0, 0.4)"
+              onPress={onPressOutput}
+            />
+          </View>
+        </View>
+
+        {children}
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 

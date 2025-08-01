@@ -48,7 +48,7 @@ const BottomTabNavigation = () => {
             <Header
               title="Mobile Documentation Explorer"
               description="Browse and search through our documentations"
-              onSettingsPress={() => navigation.navigate('LiveSupport')}
+              onSettingsPress={() => navigation.navigate('Caller')}
               onLogoutPress={logout}
             />
           ),
@@ -63,7 +63,7 @@ const BottomTabNavigation = () => {
             <Header
               title="Mobile Documentation Chatbot"
               description="Powered by DeepSeek"
-              onSettingsPress={() => navigation.navigate('LiveSupport')}
+              onSettingsPress={() => navigation.navigate('Caller')}
               onLogoutPress={logout}
             />
           ),
