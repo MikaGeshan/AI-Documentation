@@ -11,7 +11,6 @@ import {
   ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { API_URL } from '@env';
 
 import InputText from '../../components/Inputs/InputText';
 import Button from '../../components/Buttons/Button';
@@ -22,6 +21,7 @@ import axios from 'axios';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { signInWithGoogle } from '../../services/googleAuthService';
 import useAuthStore from '../../hooks/useAuthStore';
+import Config from '../../configs/config';
 
 const LoginScreen = () => {
   const { login } = useAuthStore();
@@ -113,12 +113,16 @@ const LoginScreen = () => {
     try {
       const payload = createLoginPayload();
 
-      const response = await axios.post(`${API_URL}/api/login`, payload, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
+      const response = await axios.post(
+        `${Config.API_URL}/api/login`,
+        payload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
         },
-      });
+      );
 
       console.log(response.data);
 

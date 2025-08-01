@@ -13,7 +13,6 @@ import {
 import InputText from '../../components/Inputs/InputText';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../../components/Buttons/Button';
-import { API_URL } from '@env';
 import Hyperlink from '../../components/Buttons/Hyperlink';
 import { Icon } from '../../components/Icons/Icon';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
@@ -22,6 +21,7 @@ import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { signInWithGoogle } from '../../services/googleAuthService';
 import { useForm } from '../../hooks/useForm';
 import { useVisiblePassword } from '../../hooks/useVisiblePassword';
+import Config from '../../configs/config';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
@@ -68,9 +68,11 @@ const RegisterScreen = () => {
 
     setIsLoading(true);
 
+    console.log('API_URL:', Config.API_URL);
+
     try {
       const response = await axios.post(
-        `${API_URL}/api/register`,
+        `${Config.API_URL}/api/register`,
         {
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),

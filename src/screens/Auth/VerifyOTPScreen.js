@@ -12,14 +12,15 @@ import {
 import InputOTP from '../../components/Inputs/InputOTP';
 import Button from '../../components/Buttons/Button';
 import Hyperlink from '../../components/Buttons/Hyperlink';
-import { API_URL } from '@env';
 import axios from 'axios';
 import useAuthStore from '../../hooks/useAuthStore';
+import Config from '../../configs/config';
 
 const VerifyOTPScreen = () => {
   const route = useRoute();
   const { login } = useAuthStore();
   const { formData } = route.params ?? {};
+  console.log(formData);
 
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -61,7 +62,10 @@ const VerifyOTPScreen = () => {
         otp: code,
       };
 
-      const response = await axios.post(`${API_URL}/api/verify-otp`, payload);
+      const response = await axios.post(
+        `${Config.API_URL}/api/verify-otp`,
+        payload,
+      );
 
       const { access_token, user } = response.data;
 

@@ -16,8 +16,6 @@ import { useNavigation } from '@react-navigation/native';
 import Share from 'react-native-share';
 import axios from 'axios';
 
-import { API_URL } from '@env';
-
 import Accordion from '../../components/Others/Accordion';
 import { Icon } from '../../components/Icons/Icon';
 import Option from '../../components/Options/Option';
@@ -32,6 +30,9 @@ import Uploads from '../../components/Others/Uploads';
 import { getFolderContents } from '../../services/googleDocumentService';
 import { useDocumentStore } from '../../hooks/useDocumentStore';
 import { useValidationStore } from '../../hooks/useValidationStore';
+import Button from '../../components/Buttons/Button';
+import Config from '../../configs/config';
+import { autoConfigureIP } from '../../configs/networkConfig';
 
 const DocumentsScreen = () => {
   const navigation = useNavigation();
@@ -80,7 +81,17 @@ const DocumentsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    useDocumentStore.getState().loadFolders();
+    const init = async () => {
+      const ip = await autoConfigureIP();
+      if (!ip) {
+        console.warn('autoConfigureIP failed. Skipping folder load.');
+        return;
+      }
+
+      await useDocumentStore.getState().loadFolders(); // ✅ now safe
+    };
+
+    init();
   }, []);
 
   const formatDocName = name => {
@@ -98,7 +109,7 @@ const DocumentsScreen = () => {
 
   const createFolder = async name => {
     try {
-      const response = await axios.post(`${API_URL}/api/create-folder`, {
+      const response = await axios.post(`${Config.API_URL}/api/create-folder`, {
         name,
       });
 
@@ -129,7 +140,7 @@ const DocumentsScreen = () => {
         type: 'application/pdf',
       });
 
-      await axios.post(`${API_URL}/api/upload-docs`, formData, {
+      await axios.post(`${Config.API_URL}/api/upload-docs`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
@@ -154,7 +165,7 @@ const DocumentsScreen = () => {
   const downloadAndShareFile = async doc => {
     try {
       const { id, name } = doc;
-      const downloadUrl = `${API_URL}/api/download-docs?file_id=${id}`;
+      const downloadUrl = `${Config.API_URL}/api/download-docs?file_id=${id}`;
       const localPath = `${RNFS.DocumentDirectoryPath}/${
         name || 'Dokumen'
       }.pdf`;
@@ -197,7 +208,7 @@ const DocumentsScreen = () => {
 
   const deleteDocument = async id => {
     try {
-      await axios.delete(`${API_URL}/api/delete-docs`, {
+      await axios.delete(`${Config.API_URL}/api/delete-docs`, {
         data: { file_id: id },
         headers: { 'Content-Type': 'application/json' },
       });
@@ -377,7 +388,7 @@ const DocumentsScreen = () => {
             setShowOption(false);
             if (selectedDoc?.id) {
               navigation.navigate('ViewDocument', {
-                url: `${API_URL}/api/view-docs?file_id=${selectedDoc.id}`,
+                url: `${Config.API_URL}/api/view-docs?file_id=${selectedDoc.id}`,
                 title: selectedDoc.name,
               });
             }
@@ -460,6 +471,12 @@ const DocumentsScreen = () => {
           onUpload={uri => uploadToDrive(uri, selectedFolderId)}
         />
       </KeyboardAvoidingView>
+
+      <Button text={'Caller'} onPress={() => navigation.navigate('Caller')} />
+      <Button
+        text={'Receive'}
+        onPress={() => navigation.navigate('Receiver')}
+      />
     </SafeAreaView>
   );
 };

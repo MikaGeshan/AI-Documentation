@@ -1,38 +1,64 @@
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import React from 'react';
+import {
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Platform,
+  StatusBar,
+} from 'react-native';
+import { Icon } from '../Icons/Icon';
 
-const Header = ({ title, description }) => {
-  const styles = StyleSheet.create({
-    container: {
-      backgroundColor: '#EFEDEC',
-      borderBottomWidth: 2,
-      borderBottomColor: '#ECEAE9',
-      paddingTop: 10,
-      paddingBottom: 10,
-      paddingHorizontal: 10,
-    },
-    textContainer: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 10,
-    },
-    text: {
-      textAlign: 'center',
-      fontSize: 17,
-      fontWeight: '500',
-    },
-    subtext: {
-      textAlign: 'center',
-      fontSize: 12,
-      fontWeight: '300',
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#EFEDEC',
+    borderBottomWidth: 2,
+    borderBottomColor: '#ECEAE9',
+    paddingHorizontal: 10,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 10,
+    paddingBottom: 10,
+  },
+  row: {
+    padding: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  textContainer: {
+    flex: 1,
+    marginHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 12,
+    fontWeight: '300',
+    textAlign: 'center',
+  },
+});
 
+const Header = ({ title, description, onSettingsPress, onLogoutPress }) => {
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.textContainer}>
-        <Text style={styles.text}>{title}</Text>
-        <Text style={styles.subtext}>{description}</Text>
+      <View style={styles.row}>
+        <TouchableOpacity onPress={onSettingsPress}>
+          <Icon name="Headset" size={20} color="#000" />
+        </TouchableOpacity>
+
+        <View style={styles.textContainer}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.description}>{description}</Text>
+        </View>
+
+        <TouchableOpacity onPress={onLogoutPress}>
+          <Icon name="LogOut" size={20} color="#000" />
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );

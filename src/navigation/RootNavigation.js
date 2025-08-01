@@ -12,9 +12,11 @@ import VerifyOTPScreen from '../screens/Auth/VerifyOTPScreen';
 
 import Header from '../components/Headers/Header';
 import { Icon } from '../components/Icons/Icon';
-import axios from 'axios';
 import ViewDocumentScreen from '../screens/Main/ViewDocumentScreen';
 import useAuthStore from '../hooks/useAuthStore';
+import { useNavigation } from '@react-navigation/native';
+import CallerScreen from '../screens/Call/CallerScreen';
+import ReceiverScreen from '../screens/Call/ReceiverScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -27,41 +29,50 @@ const ChatTabIcon = ({ color, size }) => (
   <Icon name="MessageCircle" color={color} size={size} />
 );
 
-const BottomTabNavigation = () => (
-  <Tab.Navigator
-    screenOptions={{
-      tabBarActiveTintColor: '#4aa8ea',
-      tabBarInactiveTintColor: '#999',
-    }}
-  >
-    <Tab.Screen
-      name="Documents"
-      component={DocumentsScreen}
-      options={{
-        header: () => (
-          <Header
-            title="Mobile Documentation Explorer"
-            description="Browse and search through our documentations"
-          />
-        ),
-        tabBarIcon: DocumentsTabIcon,
+const BottomTabNavigation = () => {
+  const navigation = useNavigation();
+  const logout = useAuthStore(state => state.logout);
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#4aa8ea',
+        tabBarInactiveTintColor: '#999',
       }}
-    />
-    <Tab.Screen
-      name="Chat"
-      component={ChatScreen}
-      options={{
-        header: () => (
-          <Header
-            title="Mobile Documentation Chatbot"
-            description="Powered by DeepSeek"
-          />
-        ),
-        tabBarIcon: ChatTabIcon,
-      }}
-    />
-  </Tab.Navigator>
-);
+    >
+      <Tab.Screen
+        name="Documents"
+        component={DocumentsScreen}
+        options={{
+          header: () => (
+            <Header
+              title="Mobile Documentation Explorer"
+              description="Browse and search through our documentations"
+              onSettingsPress={() => navigation.navigate('LiveSupport')}
+              onLogoutPress={logout}
+            />
+          ),
+          tabBarIcon: DocumentsTabIcon,
+        }}
+      />
+      <Tab.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{
+          header: () => (
+            <Header
+              title="Mobile Documentation Chatbot"
+              description="Powered by DeepSeek"
+              onSettingsPress={() => navigation.navigate('LiveSupport')}
+              onLogoutPress={logout}
+            />
+          ),
+          tabBarIcon: ChatTabIcon,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
 
 export const RootNavigation = () => {
   const [isFirstLaunch, setIsFirstLaunch] = useState(null);
@@ -108,6 +119,16 @@ export const RootNavigation = () => {
           <Stack.Screen
             name="ViewDocument"
             component={ViewDocumentScreen}
+            options={{ headerShown: true }}
+          />
+          <Stack.Screen
+            name="Caller"
+            component={CallerScreen}
+            options={{ headerShown: true }}
+          />
+          <Stack.Screen
+            name="Receiver"
+            component={ReceiverScreen}
             options={{ headerShown: true }}
           />
         </>

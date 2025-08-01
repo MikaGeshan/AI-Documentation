@@ -1,9 +1,9 @@
 import axios from 'axios';
-import { API_URL } from '@env';
+import Config from '../configs/config';
 
 export const getFolderContents = async () => {
   try {
-    const url = `${API_URL}/api/drive-contents`;
+    const url = `${Config.API_URL}/api/drive-contents`;
     console.log('Fetching folder contents from:', url);
 
     const response = await axios.get(url);
@@ -41,7 +41,7 @@ export const convertDocument = async fileId => {
   try {
     if (!fileId) throw new Error('Missing file ID');
 
-    const backendUrl = `${API_URL}/api/convert-docs`;
+    const backendUrl = `${Config.API_URL}/api/convert-docs`;
     console.log('Calling backend at:', backendUrl);
 
     const response = await axios.post(backendUrl, {

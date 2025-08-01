@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { API_URL, GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '@env';
+import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '@env';
 import axios from 'axios';
+import Config from '../configs/config';
 
 export const signInWithGoogle = async ({ handleSuccessfulLogin }) => {
   try {
@@ -13,7 +14,9 @@ export const signInWithGoogle = async ({ handleSuccessfulLogin }) => {
       throw new Error('ID Token tidak ditemukan dalam userInfo');
     }
 
-    const res = await axios.post(`${API_URL}/api/auth/google`, { idToken });
+    const res = await axios.post(`${Config.API_URL}/api/auth/google`, {
+      idToken,
+    });
 
     const { token, user, role } = res.data;
 
@@ -32,6 +35,7 @@ export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
     webClientId: GOOGLE_WEB_CLIENT_ID,
     iosClientId: GOOGLE_IOS_CLIENT_ID,
+    client_type: '3',
     offlineAccess: true,
     scopes: ['profile', 'email'],
   });

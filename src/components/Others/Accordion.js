@@ -25,7 +25,7 @@ const Accordion = ({ title, children, isExpanded, onToggle }) => {
   }, [isExpanded]);
 
   const toggleAccordion = () => {
-    onToggle?.(); // optional chaining for safety
+    onToggle?.();
   };
 
   const onLayoutContent = event => {
