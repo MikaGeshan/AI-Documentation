@@ -4,10 +4,12 @@ import { RTCPeerConnection, mediaDevices } from 'react-native-webrtc';
 import io from 'socket.io-client';
 import CallLayout from './CallLayout';
 import Config from '../../configs/config';
+import { useNavigation } from '@react-navigation/native';
 
 const ROOM_ID = 'support-room';
 
 const CallerScreen = () => {
+  const navigation = useNavigation();
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -92,6 +94,7 @@ const CallerScreen = () => {
       }
       setRemoteStream(null);
       setIsCalling(false);
+      navigation.navigate('ScreenBottomTabs');
       console.log('Call ended');
     }
   };
