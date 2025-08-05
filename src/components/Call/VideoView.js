@@ -8,9 +8,21 @@ const VideoView = ({ stream, style, mirror = false }) => {
     return null;
   }
 
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: 'black',
+    },
+    video: {
+      width: '100%',
+      height: '100%',
+    },
+  });
+
   return (
     <View style={[styles.container, style]}>
       <RTCView
+        key={stream.id || stream.toURL()}
         streamURL={stream.toURL()}
         style={styles.video}
         objectFit="cover"
@@ -20,16 +32,5 @@ const VideoView = ({ stream, style, mirror = false }) => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'black',
-  },
-  video: {
-    width: '100%',
-    height: '100%',
-  },
-});
 
 export default VideoView;

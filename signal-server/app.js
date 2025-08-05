@@ -117,7 +117,10 @@ io.on('connection', socket => {
 
     const targetSocketId = userToSocket[targetUserId];
     if (targetSocketId && io.sockets.sockets.get(targetSocketId)) {
-      io.to(targetSocketId).emit('signal', { data });
+      io.to(targetSocketId).emit('signal', {
+        data,
+        fromUserId: resolvedFromUserId,
+      });
       console.log(
         `Sent signal from admin ${adminSocketId} to caller ${targetUserId}`,
       );

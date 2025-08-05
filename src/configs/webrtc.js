@@ -12,6 +12,7 @@ export const createPeerConnection = onTrack => {
 
   pc.ontrack = event => {
     const [remoteStream] = event.streams;
+    console.log('Remote Stream ', remoteStream?.id);
     onTrack(remoteStream);
   };
 
