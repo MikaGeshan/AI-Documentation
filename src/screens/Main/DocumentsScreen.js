@@ -30,9 +30,9 @@ import Uploads from '../../components/Others/Uploads';
 import { getFolderContents } from '../../services/googleDocumentService';
 import { useDocumentStore } from '../../hooks/useDocumentStore';
 import { useValidationStore } from '../../hooks/useValidationStore';
-import Button from '../../components/Buttons/Button';
 import Config from '../../configs/config';
 import { autoConfigureIP } from '../../configs/networkConfig';
+import useAuthStore from '../../hooks/useAuthStore';
 
 const DocumentsScreen = () => {
   const navigation = useNavigation();
@@ -54,7 +54,6 @@ const DocumentsScreen = () => {
   const loadFolders = useDocumentStore(state => state.loadFolders);
 
   const {
-    isAdmin,
     showOption,
     expandedFolder,
     uploadModalVisible,
@@ -78,6 +77,8 @@ const DocumentsScreen = () => {
     setShowError,
   } = useValidationStore();
 
+  const isAdmin = useAuthStore(state => state.isAdmin);
+
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -88,7 +89,7 @@ const DocumentsScreen = () => {
         return;
       }
 
-      await useDocumentStore.getState().loadFolders(); // ✅ now safe
+      await useDocumentStore.getState().loadFolders();
     };
 
     init();
@@ -471,11 +472,6 @@ const DocumentsScreen = () => {
           onUpload={uri => uploadToDrive(uri, selectedFolderId)}
         />
       </KeyboardAvoidingView>
-
-      <Button
-        text={'Receive'}
-        onPress={() => navigation.navigate('Receiver')}
-      />
     </SafeAreaView>
   );
 };

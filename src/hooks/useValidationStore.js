@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 
 export const useValidationStore = create(set => ({
-  isAdmin: false,
   showOption: false,
   expandedFolder: null,
   uploadModalVisible: false,
@@ -14,7 +13,6 @@ export const useValidationStore = create(set => ({
   errorMessage: '',
   showError: false,
 
-  setIsAdmin: val => set({ isAdmin: val }),
   setShowOption: val => set({ showOption: val }),
   setExpandedFolder: val => set({ expandedFolder: val }),
   setUploadModalVisible: val => set({ uploadModalVisible: val }),

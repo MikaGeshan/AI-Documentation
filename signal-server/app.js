@@ -16,46 +16,148 @@ const io = new Server(server, {
 
 const userToSocket = {};
 const socketToUser = {};
+const socketToRole = {};
+const roleToSockets = {
+  admin: new Set(),
+};
 const pendingSignals = {};
+const callerToAdmin = {};
 
 io.on('connection', socket => {
   console.log('Client connected:', socket.id);
 
-  socket.on('register', userId => {
-    userToSocket[userId] = socket.id;
-    socketToUser[socket.id] = userId;
-    console.log(`Registered user ${userId} with socket ${socket.id}`);
+  socket.on('register', payload => {
+    console.log('Raw register payload:', JSON.stringify(payload));
 
-    if (pendingSignals[userId]) {
-      pendingSignals[userId].forEach(data => {
-        socket.emit('signal', { data });
+    const id = payload?.id || payload?.userId || payload?.user?.id;
+    const role = payload?.role || payload?.user?.role;
+
+    if (!id || !role) {
+      console.warn(
+        `Invalid registration payload from socket ${socket.id}:`,
+        JSON.stringify(payload),
+      );
+      return;
+    }
+
+    userToSocket[id] = socket.id;
+    socketToUser[socket.id] = id;
+    socketToRole[socket.id] = role;
+
+    if (role === 'admin') {
+      roleToSockets.admin.add(socket.id);
+    }
+
+    console.log(`Registered user with socket ${socket.id}:`, { id, role });
+
+    if (pendingSignals[id]) {
+      console.log(
+        `Delivering ${pendingSignals[id].length} pending signals to ${id}`,
+      );
+      pendingSignals[id].forEach(({ data, fromUserId }) => {
+        socket.emit('signal', { data, fromUserId });
       });
-      delete pendingSignals[userId];
+      delete pendingSignals[id];
     }
   });
 
-  socket.on('signal', ({ targetUserId, data }) => {
+  socket.on('signal', ({ targetUserId, data, fromUserId }) => {
+    const socketId = socket.id;
+    const resolvedFromUserId = fromUserId || socketToUser[socketId];
+
+    if (!resolvedFromUserId) {
+      console.warn(
+        `Signal received from unknown socket ${socketId}. No user ID found.`,
+      );
+      return;
+    }
+
+    if (!targetUserId) {
+      console.log(
+        `Broadcasting signal from caller ${resolvedFromUserId} to all admins`,
+      );
+
+      if (roleToSockets.admin.size === 0) {
+        console.log(
+          `No admins connected. Storing signal from ${resolvedFromUserId}`,
+        );
+        if (!pendingSignals[resolvedFromUserId])
+          pendingSignals[resolvedFromUserId] = [];
+        pendingSignals[resolvedFromUserId].push({
+          data,
+          fromUserId: resolvedFromUserId,
+        });
+        return;
+      }
+
+      roleToSockets.admin.forEach(adminSocketId => {
+        const adminSocket = io.sockets.sockets.get(adminSocketId);
+        if (adminSocket) {
+          adminSocket.emit('signal', { data, fromUserId: resolvedFromUserId });
+          console.log(`Sent signal to admin socket ${adminSocketId}`);
+        }
+      });
+
+      return;
+    }
+
+    const adminSocketId = socketId;
+
+    if (
+      callerToAdmin[targetUserId] &&
+      callerToAdmin[targetUserId] !== adminSocketId
+    ) {
+      console.warn(
+        `Admin ${adminSocketId} tried to respond to caller ${targetUserId}, but already handled by ${callerToAdmin[targetUserId]}`,
+      );
+      return;
+    }
+
+    callerToAdmin[targetUserId] = adminSocketId;
+
     const targetSocketId = userToSocket[targetUserId];
     if (targetSocketId && io.sockets.sockets.get(targetSocketId)) {
       io.to(targetSocketId).emit('signal', { data });
+      console.log(
+        `Sent signal from admin ${adminSocketId} to caller ${targetUserId}`,
+      );
     } else {
-      if (!pendingSignals[targetUserId]) {
-        pendingSignals[targetUserId] = [];
-      }
-      pendingSignals[targetUserId].push(data);
-      console.log(`Stored signal for ${targetUserId}`);
+      if (!pendingSignals[targetUserId]) pendingSignals[targetUserId] = [];
+      pendingSignals[targetUserId].push({
+        data,
+        fromUserId: resolvedFromUserId,
+      });
+      console.log(`Stored signal for offline caller ${targetUserId}`);
     }
   });
 
   socket.on('disconnect', () => {
     const userId = socketToUser[socket.id];
-    delete userToSocket[userId];
+    const role = socketToRole[socket.id];
+
+    console.log(
+      `Client disconnected: ${socket.id} (${role || 'unknown role'})`,
+    );
+
+    if (userId) {
+      delete userToSocket[userId];
+      Object.keys(callerToAdmin).forEach(caller => {
+        if (callerToAdmin[caller] === socket.id) {
+          delete callerToAdmin[caller];
+        }
+      });
+    }
+
+    if (role === 'admin') {
+      roleToSockets.admin.delete(socket.id);
+    }
+
     delete socketToUser[socket.id];
-    console.log('Client disconnected:', socket.id);
+    delete socketToRole[socket.id];
   });
 });
 
 const PORT = 3000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🔌 Socket.IO server running on http://0.0.0.0:${PORT}`);
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
 });

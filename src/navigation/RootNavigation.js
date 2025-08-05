@@ -30,8 +30,9 @@ const ChatTabIcon = ({ color, size }) => (
 );
 
 const BottomTabNavigation = () => {
-  const navigation = useNavigation();
+  const { isAdmin } = useAuthStore.getState();
   const logout = useAuthStore(state => state.logout);
+  const navigation = useNavigation();
 
   return (
     <Tab.Navigator
@@ -48,7 +49,14 @@ const BottomTabNavigation = () => {
             <Header
               title="Mobile Documentation Explorer"
               description="Browse and search through our documentations"
-              onSettingsPress={() => navigation.navigate('Caller')}
+              onSettingsPress={() => {
+                if (isAdmin) {
+                  console.log(isAdmin);
+                  navigation.navigate('Receiver');
+                } else {
+                  navigation.navigate('Caller');
+                }
+              }}
               onLogoutPress={logout}
             />
           ),
@@ -63,7 +71,13 @@ const BottomTabNavigation = () => {
             <Header
               title="Mobile Documentation Chatbot"
               description="Powered by DeepSeek"
-              onSettingsPress={() => navigation.navigate('Caller')}
+              onSettingsPress={() => {
+                if (isAdmin) {
+                  navigation.navigate('Receiver');
+                } else {
+                  navigation.navigate('Caller');
+                }
+              }}
               onLogoutPress={logout}
             />
           ),
