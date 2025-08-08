@@ -2,11 +2,13 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '../Icons/Icon';
 
-const SuccessDialog = ({ message, onHide }) => {
+const SuccessDialog = ({ message, visible, onHide }) => {
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
+    if (!visible) return;
+
     Animated.parallel([
       Animated.timing(opacityAnim, {
         toValue: 1,
@@ -38,7 +40,9 @@ const SuccessDialog = ({ message, onHide }) => {
     }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [opacityAnim, scaleAnim, onHide]);
+  }, [visible, opacityAnim, scaleAnim, onHide]);
+
+  if (!visible) return null;
 
   const styles = StyleSheet.create({
     overlay: {

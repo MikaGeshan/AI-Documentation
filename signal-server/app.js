@@ -77,26 +77,46 @@ io.on('connection', socket => {
         `Broadcasting signal from caller ${resolvedFromUserId} to all admins`,
       );
 
-      if (roleToSockets.admin.size === 0) {
+      const signalData = { data, fromUserId: resolvedFromUserId };
+
+      if (callerToAdmin[resolvedFromUserId]) {
         console.log(
-          `No admins connected. Storing signal from ${resolvedFromUserId}`,
+          `Caller ${resolvedFromUserId} already assigned to an admin.`,
         );
-        if (!pendingSignals[resolvedFromUserId])
-          pendingSignals[resolvedFromUserId] = [];
-        pendingSignals[resolvedFromUserId].push({
-          data,
-          fromUserId: resolvedFromUserId,
-        });
         return;
       }
 
-      roleToSockets.admin.forEach(adminSocketId => {
-        const adminSocket = io.sockets.sockets.get(adminSocketId);
-        if (adminSocket) {
-          adminSocket.emit('signal', { data, fromUserId: resolvedFromUserId });
-          console.log(`Sent signal to admin socket ${adminSocketId}`);
-        }
-      });
+      if (!pendingSignals[resolvedFromUserId]) {
+        const sendToAdmins = () => {
+          if (callerToAdmin[resolvedFromUserId]) {
+            clearInterval(pendingSignals[resolvedFromUserId].interval);
+            delete pendingSignals[resolvedFromUserId];
+            return;
+          }
+
+          if (roleToSockets.admin.size === 0) {
+            console.log(
+              `No admins connected. Will retry sending signal from ${resolvedFromUserId}`,
+            );
+            return;
+          }
+
+          roleToSockets.admin.forEach(adminSocketId => {
+            const adminSocket = io.sockets.sockets.get(adminSocketId);
+            if (adminSocket) {
+              adminSocket.emit('signal', signalData);
+              console.log(
+                `Sent signal to admin socket ${adminSocketId} from ${resolvedFromUserId}`,
+              );
+            }
+          });
+        };
+
+        sendToAdmins();
+        const interval = setInterval(sendToAdmins, 3000);
+
+        pendingSignals[resolvedFromUserId] = { interval };
+      }
 
       return;
     }
@@ -114,6 +134,11 @@ io.on('connection', socket => {
     }
 
     callerToAdmin[targetUserId] = adminSocketId;
+
+    if (pendingSignals[targetUserId]?.interval) {
+      clearInterval(pendingSignals[targetUserId].interval);
+      delete pendingSignals[targetUserId];
+    }
 
     const targetSocketId = userToSocket[targetUserId];
     if (targetSocketId && io.sockets.sockets.get(targetSocketId)) {

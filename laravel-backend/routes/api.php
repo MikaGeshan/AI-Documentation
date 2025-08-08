@@ -1,5 +1,6 @@
 <?php
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ExploreController;
 use App\Http\Controllers\GoogleAuthController;
 use App\Http\Controllers\GoogleDriveController;
 use App\Http\Controllers\OtpController;
@@ -21,6 +22,10 @@ Route::delete('/delete-docs', [GoogleDriveController::class, 'deleteGoogleDocs']
 Route::post('/create-folder', [GoogleDriveController::class, 'createGoogleDriveFolder']);
 Route::post('/convert-docs', [GoogleDriveController::class, 'convertGoogleDocsToTxt']);
 Route::post('/upload-docs', [GoogleDriveController::class, 'uploadFileToDrive']);
+
+// Explore Routes
+Route::get('/explore-contents', [ExploreController::class, 'index']);   
+Route::post('/create-explore', [ExploreController::class, 'store']);
 
 // Auth Middleware
 Route::middleware(['auth:api'])->group(function () {

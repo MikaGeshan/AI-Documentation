@@ -10,8 +10,10 @@ export default function CallLayout({
   callStarted,
   onPressCall,
   onPressEndCall,
-  onPressOutput,
+  isMicOn = true,
+  onHideCallButton = false,
 }) {
+  const showCallButton = onHideCallButton ? !callStarted : true;
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -59,25 +61,20 @@ export default function CallLayout({
       <View style={styles.buttonContainer}>
         <View style={styles.buttonSpacing}>
           <ButtonCall
-            name="Mic"
+            name={isMicOn ? 'Mic' : 'MicOff'}
             backgroundColor="rgba(0, 0, 0, 0.4)"
             onPress={onPressMic}
           />
         </View>
-        <View style={styles.buttonSpacing}>
-          <ButtonCall
-            name="Phone"
-            backgroundColor={callStarted ? 'red' : 'green'}
-            onPress={callStarted ? onPressEndCall : onPressCall}
-          />
-        </View>
-        {/* <View style={styles.buttonSpacing}>
-          <ButtonCall
-            name="Volume2"
-            backgroundColor="rgba(0, 0, 0, 0.4)"
-            onPress={onPressOutput}
-          />
-        </View> */}
+        {showCallButton && (
+          <View style={styles.buttonSpacing}>
+            <ButtonCall
+              name="Phone"
+              backgroundColor={callStarted ? 'red' : 'green'}
+              onPress={callStarted ? onPressEndCall : onPressCall}
+            />
+          </View>
+        )}
       </View>
     </View>
   );

@@ -1,32 +1,31 @@
-import { useState } from 'react';
+import { create } from 'zustand';
 
-export const useForm = () => {
-  const [formData, setFormData] = useState({
+export const useFormStore = create(set => ({
+  formData: {
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
-  });
-
-  const [errors, setErrors] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-  });
-
-  const updateFormData = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const isValidEmail = email => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-  const isValidPassword = password => password.length >= 8;
-
-  const validateForm = () => {
+  },
+  errors: {},
+  setFormData: (field, value) =>
+    set(state => ({
+      formData: { ...state.formData, [field]: value },
+      errors: { ...state.errors, [field]: '' },
+    })),
+  setErrors: newErrors => set({ errors: newErrors }),
+  resetForm: () =>
+    set({
+      formData: {
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+      },
+      errors: {},
+    }),
+  validateForm: () => {
+    const { formData } = useFormStore.getState();
     const newErrors = {};
     let isValid = true;
 
@@ -38,7 +37,7 @@ export const useForm = () => {
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
       isValid = false;
-    } else if (!isValidEmail(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
       isValid = false;
     }
@@ -46,7 +45,7 @@ export const useForm = () => {
     if (!formData.password) {
       newErrors.password = 'Password is required';
       isValid = false;
-    } else if (!isValidPassword(formData.password)) {
+    } else if (formData.password.length < 8) {
       newErrors.password = 'Password must be at least 8 characters long';
       isValid = false;
     }
@@ -59,16 +58,7 @@ export const useForm = () => {
       isValid = false;
     }
 
-    setErrors(newErrors);
+    useFormStore.getState().setErrors(newErrors);
     return isValid;
-  };
-
-  return {
-    formData,
-    errors,
-    updateFormData,
-    validateForm,
-    setFormData,
-    setErrors,
-  };
-};
+  },
+}));

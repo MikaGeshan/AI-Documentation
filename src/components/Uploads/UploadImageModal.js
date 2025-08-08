@@ -10,7 +10,7 @@ import {
 import { pickDirectory } from '@react-native-documents/picker';
 import { Icon } from '../Icons/Icon';
 
-const Uploads = ({ visible, onClose, onUpload, folderId }) => {
+const UploadImageModal = ({ visible, onClose, onUpload, folderId }) => {
   const [selectedUri, setSelectedUri] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -136,4 +136,4 @@ const Uploads = ({ visible, onClose, onUpload, folderId }) => {
   );
 };
 
-export default Uploads;
+export default UploadImageModal;

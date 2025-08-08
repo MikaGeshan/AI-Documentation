@@ -16,7 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import Share from 'react-native-share';
 import axios from 'axios';
 
-import Accordion from '../../components/Others/Accordion';
+import Accordion from '../../components/Selects/Accordion';
 import { Icon } from '../../components/Icons/Icon';
 import Option from '../../components/Options/Option';
 import ProgressBar from '../../components/Loaders/ProgressBar';
@@ -25,14 +25,14 @@ import InputSelect from '../../components/Inputs/InputSelect';
 import ErrorDialog from '../../components/Alerts/ErrorDialog';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import InputModal from '../../components/Inputs/InputModal';
-import Uploads from '../../components/Others/Uploads';
 
 import { getFolderContents } from '../../services/googleDocumentService';
-import { useDocumentStore } from '../../hooks/useDocumentStore';
-import { useValidationStore } from '../../hooks/useValidationStore';
+import { useDocumentStore } from '../../hooks/documents/useDocumentStore';
+import { useValidationStore } from '../../hooks/validations/useValidationStore';
 import Config from '../../configs/config';
 import { autoConfigureIP } from '../../configs/networkConfig';
-import useAuthStore from '../../hooks/useAuthStore';
+import useAuthStore from '../../hooks/auth/useAuthStore';
+import UploadImageModal from '../../components/Uploads/UploadImageModal';
 
 const DocumentsScreen = () => {
   const navigation = useNavigation();
@@ -466,7 +466,7 @@ const DocumentsScreen = () => {
           }}
         />
 
-        <Uploads
+        <UploadImageModal
           visible={uploadModalVisible}
           onClose={() => setUploadModalVisible(false)}
           onUpload={uri => uploadToDrive(uri, selectedFolderId)}

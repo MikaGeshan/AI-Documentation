@@ -8,6 +8,8 @@ const InputText = ({
   autoCapitalize,
   autoCorrect,
   style,
+  multiline,
+  maxLength,
   onPress,
   ...props
 }) => {
@@ -39,6 +41,8 @@ const InputText = ({
         secureTextEntry={secureTextEntry}
         autoCapitalize={autoCapitalize}
         autoCorrect={autoCorrect}
+        multiline={multiline}
+        maxLength={maxLength}
         value={value}
         onPress={onPress}
         style={styles.inputText}

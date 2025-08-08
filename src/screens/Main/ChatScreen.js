@@ -9,10 +9,10 @@ import {
 } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import InputBox from '../../components/Inputs/InputBox';
-import BubbleChat from '../../components/Others/BubbleChat';
+import BubbleChat from '../../components/Cards/BubbleChat';
 import { deepSeekResponse } from '../../services/deepSeekResponse';
 import { getInitialGreeting } from '../../utils/greetings';
-import { useLoadingMessage } from '../../hooks/loadingMessage';
+import { useLoadingMessage } from '../../hooks/ai/loadingMessage';
 
 const ChatScreen = () => {
   const { stage, startStage, resetStage, loadingMessage } = useLoadingMessage();

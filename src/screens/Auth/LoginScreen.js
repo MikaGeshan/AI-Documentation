@@ -20,7 +20,7 @@ import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import axios from 'axios';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { signInWithGoogle } from '../../services/googleAuthService';
-import useAuthStore from '../../hooks/useAuthStore';
+import useAuthStore from '../../hooks/auth/useAuthStore';
 import Config from '../../configs/config';
 
 const LoginScreen = () => {
@@ -82,15 +82,24 @@ const LoginScreen = () => {
   };
 
   const handleSuccessfulLogin = async data => {
-    const { access_token, user } = data;
-    await login({ access_token, user });
+    try {
+      const { access_token, user } = data;
 
-    setErrors({ emailOrName: '', password: '' });
-    setShowSuccessDialog(true);
+      await login({ access_token, user });
 
-    setTimeout(() => {
-      setShowSuccessDialog(false);
-    }, 2000);
+      setShowSuccessDialog(true);
+
+      console.log(setShowSuccessDialog);
+
+      setTimeout(() => {
+        setTimeout(() => {
+          setShowSuccessDialog(false);
+          navigation.replace('ScreenBottomTabs');
+        }, 3000);
+      }, 100);
+    } catch (error) {
+      console.error('Login handling failed:', error);
+    }
   };
 
   const handleLoginError = data => {

@@ -13,7 +13,7 @@ import InputOTP from '../../components/Inputs/InputOTP';
 import Button from '../../components/Buttons/Button';
 import Hyperlink from '../../components/Buttons/Hyperlink';
 import axios from 'axios';
-import useAuthStore from '../../hooks/useAuthStore';
+import useAuthStore from '../../hooks/auth/useAuthStore';
 import Config from '../../configs/config';
 
 const VerifyOTPScreen = () => {

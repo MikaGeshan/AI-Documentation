@@ -1,7 +1,7 @@
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet } from 'react-native';
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
-import Onboarding from '../components/Others/Onboarding';
+import Onboarding from '../components/Cards/Onboarding';
 
 const WelcomeScreen = () => {
   const navigation = useNavigation();

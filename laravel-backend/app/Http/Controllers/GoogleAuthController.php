@@ -54,7 +54,6 @@ class GoogleAuthController extends Controller
     ]);
 }
 
-
     public function redirectToGoogle()
     {
         return Socialite::driver('google')
@@ -111,7 +110,6 @@ class GoogleAuthController extends Controller
 
         return false;
     }
-
     private function shareFolderToUser($email, $role = 'reader')
     {
         $client = GoogleTokenService::getAuthorizedClient();

@@ -4,13 +4,14 @@ import { RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
 import CallLayout from './CallLayout';
 import { createPeerConnection, getLocalStream } from '../../configs/webrtc';
 import { getSocket } from '../../configs/socket';
-import useAuthStore from '../../hooks/useAuthStore';
+import useAuthStore from '../../hooks/auth/useAuthStore';
 import { useNavigation } from '@react-navigation/native';
 
 export default function ReceiverScreen() {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const [offer, setOffer] = useState(null);
+  const [muteMic, setMuteMic] = useState(true);
   const [callStarted, setCallStarted] = useState(false);
   const pcRef = useRef(null);
   const socket = getSocket();
@@ -75,6 +76,18 @@ export default function ReceiverScreen() {
     setCallStarted(true);
   };
 
+  const mute = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        const newState = !audioTrack.enabled;
+        audioTrack.enabled = newState;
+        setMuteMic(newState);
+        console.log(`Microphone ${newState ? 'unmuted' : 'muted'}`);
+      }
+    }
+  };
+
   const endCall = (sendSignal = true) => {
     console.log('Ending call...', { sendSignal });
 
@@ -124,7 +137,9 @@ export default function ReceiverScreen() {
           remoteStream={remoteStream}
           callStarted={callStarted}
           onPressCall={answerCall}
-          onPressEndCall={endCall}
+          onPressMic={mute}
+          isMicOn={muteMic}
+          onHideCallButton={true}
         />
       </KeyboardAvoidingView>
     </View>

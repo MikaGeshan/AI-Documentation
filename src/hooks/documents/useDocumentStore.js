@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getFolderContents } from '../services/googleDocumentService';
+import { getFolderContents } from '../../services/googleDocumentService';
 
 export const useDocumentStore = create(set => ({
   folders: [],

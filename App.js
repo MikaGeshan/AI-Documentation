@@ -7,13 +7,18 @@ import { initializeSocket } from './src/configs/socket';
 
 const App = () => {
   useEffect(() => {
-    async function setup() {
-      const ip = await autoConfigureIP();
-      const socket = initializeSocket(`http://${ip}:3000`);
-    }
+    const setup = async () => {
+      try {
+        await configureGoogleSignIn();
+        const ip = await autoConfigureIP();
+
+        initializeSocket(`http://${ip}:3000`);
+      } catch (error) {
+        console.error('Setup failed:', error);
+      }
+    };
 
     setup();
-    configureGoogleSignIn();
   }, []);
 
   return (

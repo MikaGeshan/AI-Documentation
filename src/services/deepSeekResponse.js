@@ -3,11 +3,11 @@ import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL } from '@env';
 import { getFolderContents, convertDocument } from './googleDocumentService';
 import { greetingsAndListApp } from '../utils/greetings';
 import { getCachedDocument, cacheDocument } from './documentCacheManager';
-import { cutText, detectMentionedApps, extractAppNames } from '../utils/text';
+import { cutText, detectMentionedApps } from '../utils/text';
 import {
   createAbortController,
   getAbortSignal,
-} from '../hooks/abortDeepSeekResponse';
+} from '../hooks/ai/abortDeepSeekResponse';
 
 const MAX_DOCS = 4;
 

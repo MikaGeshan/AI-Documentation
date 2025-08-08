@@ -9,7 +9,7 @@ import {
   ScrollView,
   FlatList,
 } from 'react-native';
-import Accordion from '../Others/Accordion';
+import Accordion from '../Selects/Accordion';
 
 const InputSelect = ({
   visible,

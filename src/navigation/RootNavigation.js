@@ -13,10 +13,14 @@ import VerifyOTPScreen from '../screens/Auth/VerifyOTPScreen';
 import Header from '../components/Headers/Header';
 import { Icon } from '../components/Icons/Icon';
 import ViewDocumentScreen from '../screens/Main/ViewDocumentScreen';
-import useAuthStore from '../hooks/useAuthStore';
+import useAuthStore from '../hooks/auth/useAuthStore';
 import { useNavigation } from '@react-navigation/native';
 import CallerScreen from '../screens/Call/CallerScreen';
 import ReceiverScreen from '../screens/Call/ReceiverScreen';
+import ExploreScreen from '../screens/Explore/ExploreScreen';
+import CreateExploreScreen from '../screens/Explore/CreateExploreScreen';
+import ViewExploreScreen from '../screens/Explore/ViewExploreScreen';
+import EditExploreScreen from '../screens/Explore/EditExploreScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -27,6 +31,10 @@ const DocumentsTabIcon = ({ color, size }) => (
 
 const ChatTabIcon = ({ color, size }) => (
   <Icon name="MessageCircle" color={color} size={size} />
+);
+
+const ExploreTabIcon = ({ color, size }) => (
+  <Icon name="Compass" color={color} size={size} />
 );
 
 const BottomTabNavigation = () => {
@@ -84,6 +92,27 @@ const BottomTabNavigation = () => {
           tabBarIcon: ChatTabIcon,
         }}
       />
+      <Tab.Screen
+        name="Explore"
+        component={ExploreScreen}
+        options={{
+          header: () => (
+            <Header
+              title="Mobile Documentation Explorer"
+              description="Fel Free to Explore the Available Documentation"
+              onSettingsPress={() => {
+                if (isAdmin) {
+                  navigation.navigate('Receiver');
+                } else {
+                  navigation.navigate('Caller');
+                }
+              }}
+              onLogoutPress={logout}
+            />
+          ),
+          tabBarIcon: ExploreTabIcon,
+        }}
+      />
     </Tab.Navigator>
   );
 };
@@ -129,6 +158,21 @@ export const RootNavigation = () => {
           <Stack.Screen
             name="ScreenBottomTabs"
             component={BottomTabNavigation}
+          />
+          <Stack.Screen
+            name="ViewExplore"
+            component={ViewExploreScreen}
+            options={{ headerShown: true }}
+          />
+          <Stack.Screen
+            name="CreateExplore"
+            component={CreateExploreScreen}
+            options={{ headerShown: true, headerTitle: 'Create New Explore' }}
+          />
+          <Stack.Screen
+            name="EditExplore"
+            component={EditExploreScreen}
+            options={{ headerShown: true, headerTitle: 'Edit Explore' }}
           />
           <Stack.Screen
             name="ViewDocument"

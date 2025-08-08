@@ -3,15 +3,15 @@ import { KeyboardAvoidingView, SafeAreaView, StyleSheet } from 'react-native';
 import { RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
 import CallLayout from './CallLayout';
 import { createPeerConnection, getLocalStream } from '../../configs/webrtc';
-import useAuthStore from '../../hooks/useAuthStore';
+import useAuthStore from '../../hooks/auth/useAuthStore';
 import { getSocket } from '../../configs/socket';
 import { useNavigation } from '@react-navigation/native';
 
 export default function CallerScreen() {
   const [localStream, setLocalStream] = useState(null);
   const [remoteStream, setRemoteStream] = useState(null);
-  const [isMicMuted, setIsMicMuted] = useState(false);
   const [callStarted, setCallStarted] = useState(false);
+  const [muteMic, setMuteMic] = useState(true);
   const navigation = useNavigation();
   const pcRef = useRef(null);
   const socket = getSocket();
@@ -38,7 +38,6 @@ export default function CallerScreen() {
         endCall(false);
       }
     });
-
     return () => {
       socket.off('signal');
       pcRef.current?.close();
@@ -72,6 +71,18 @@ export default function CallerScreen() {
     });
 
     setCallStarted(true);
+  };
+
+  const mute = () => {
+    if (localStream) {
+      const audioTrack = localStream.getAudioTracks()[0];
+      if (audioTrack) {
+        const newState = !audioTrack.enabled;
+        audioTrack.enabled = newState;
+        setMuteMic(newState);
+        console.log(`Microphone ${newState ? 'unmuted' : 'muted'}`);
+      }
+    }
   };
 
   const endCall = (sendSignal = true) => {
@@ -129,14 +140,6 @@ export default function CallerScreen() {
     }
   };
 
-  const toggleMic = () => {
-    const enabled = !isMicMuted;
-    localStream.getAudioTracks().forEach(track => {
-      track.enabled = enabled;
-    });
-    setIsMicMuted(!enabled);
-  };
-
   const styles = StyleSheet.create({
     safeContainer: {
       flex: 1,
@@ -155,7 +158,8 @@ export default function CallerScreen() {
           callStarted={callStarted}
           onPressCall={startCall}
           onPressEndCall={endCall}
-          onPressMic={toggleMic}
+          onPressMic={mute}
+          isMicOn={muteMic}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

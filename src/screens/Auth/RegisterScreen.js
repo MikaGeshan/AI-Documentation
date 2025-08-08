@@ -19,21 +19,15 @@ import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import axios from 'axios';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 import { signInWithGoogle } from '../../services/googleAuthService';
-import { useForm } from '../../hooks/useForm';
-import { useVisiblePassword } from '../../hooks/useVisiblePassword';
+import { useFormStore } from '../../hooks/forms/useForm';
+import { useVisiblePassword } from '../../hooks/forms/useVisiblePassword';
 import Config from '../../configs/config';
 
 const RegisterScreen = () => {
   const navigation = useNavigation();
 
-  const {
-    formData,
-    errors,
-    updateFormData,
-    validateForm,
-    setFormData,
-    setErrors,
-  } = useForm();
+  const { formData, errors, setFormData, validateForm, resetForm } =
+    useFormStore();
 
   const [showPassword, togglePassword] = useVisiblePassword();
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -54,6 +48,7 @@ const RegisterScreen = () => {
 
       navigation.replace('Verify');
     }, 3000);
+    resetForm();
   };
 
   const handleRegistrationError = data => {
@@ -63,7 +58,7 @@ const RegisterScreen = () => {
   };
 
   const handleRegister = async () => {
-    setErrors({});
+    errors({});
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -260,7 +255,7 @@ const RegisterScreen = () => {
               <InputText
                 placeholder="Enter your name"
                 value={formData.name}
-                onChangeText={value => updateFormData('name', value)}
+                onChangeText={value => setFormData('name', value)}
                 style={[styles.textInput, errors.name && styles.inputError]}
                 autoCapitalize="words"
                 returnKeyType="next"
@@ -275,7 +270,7 @@ const RegisterScreen = () => {
               <InputText
                 placeholder="Enter your email"
                 value={formData.email}
-                onChangeText={value => updateFormData('email', value)}
+                onChangeText={value => setFormData('email', value)}
                 style={[styles.textInput, errors.email && styles.inputError]}
                 autoCapitalize="none"
                 keyboardType="email-address"
@@ -293,7 +288,7 @@ const RegisterScreen = () => {
                   placeholder="Enter your password"
                   secureTextEntry={!showPassword}
                   value={formData.password}
-                  onChangeText={value => updateFormData('password', value)}
+                  onChangeText={value => setFormData('password', value)}
                   style={[
                     styles.textInput,
                     errors.password && styles.inputError,
@@ -326,9 +321,7 @@ const RegisterScreen = () => {
                   placeholder="Confirm your password"
                   secureTextEntry={!showConfirmPassword}
                   value={formData.confirmPassword}
-                  onChangeText={value =>
-                    updateFormData('confirmPassword', value)
-                  }
+                  onChangeText={value => setFormData('confirmPassword', value)}
                   style={[
                     styles.textInput,
                     errors.confirmPassword && styles.inputError,
