@@ -8,10 +8,10 @@ import Animated, {
 import { Icon } from '../Icons/Icon';
 
 const Accordion = ({ title, children, isExpanded, onToggle }) => {
+  const [measured, setMeasured] = useState(false);
   const [contentHeight, setContentHeight] = useState(0);
 
-  // ✅ ensure boolean state
-  const expandedShared = useSharedValue(!!isExpanded);
+  const expandedShared = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
     height: withTiming(expandedShared.value ? contentHeight : 0, {
@@ -21,50 +21,51 @@ const Accordion = ({ title, children, isExpanded, onToggle }) => {
   }));
 
   useEffect(() => {
-    expandedShared.value = !!isExpanded;
-  }, [isExpanded]);
+    if (measured) {
+      expandedShared.value = isExpanded ? 1 : 0;
+    }
+  }, [isExpanded, measured, contentHeight, expandedShared]);
 
-  const toggleAccordion = () => {
-    onToggle?.();
-  };
-
-  const onLayoutContent = event => {
-    const layoutHeight = event.nativeEvent.layout.height;
-    if (contentHeight === 0) {
-      setContentHeight(layoutHeight);
+  const onLayoutContent = e => {
+    if (!measured) {
+      setContentHeight(e.nativeEvent.layout.height);
+      setMeasured(true);
     }
   };
 
   const styles = StyleSheet.create({
     container: {
-      borderBottomWidth: 1,
-      borderColor: '#ccc',
       marginBottom: 10,
+      borderRadius: 10,
+      backgroundColor: '#E6E6E6',
+      overflow: 'hidden',
     },
     header: {
       padding: 16,
-      backgroundColor: '#f0f0f0',
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      backgroundColor: '#E6E6E6',
     },
     title: {
       fontSize: 16,
       fontWeight: 'bold',
+      color: '#000',
     },
     contentWrapper: {
       padding: 16,
-      backgroundColor: '#fff',
+      backgroundColor: '#E6E6E6',
+    },
+    hiddenMeasure: {
       position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
+      opacity: 0,
+      zIndex: -1,
     },
   });
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={toggleAccordion} style={styles.header}>
+      <TouchableOpacity onPress={onToggle} style={styles.header}>
         <Text style={styles.title}>{title}</Text>
         <Icon
           name={isExpanded ? 'ChevronUp' : 'ChevronDown'}
@@ -73,10 +74,14 @@ const Accordion = ({ title, children, isExpanded, onToggle }) => {
         />
       </TouchableOpacity>
 
-      <Animated.View style={animatedStyle}>
-        <View onLayout={onLayoutContent} style={styles.contentWrapper}>
-          {children}
+      {!measured && (
+        <View style={styles.hiddenMeasure} onLayout={onLayoutContent}>
+          <View style={styles.contentWrapper}>{children}</View>
         </View>
+      )}
+
+      <Animated.View style={animatedStyle}>
+        <View style={styles.contentWrapper}>{children}</View>
       </Animated.View>
     </View>
   );

@@ -223,7 +223,7 @@ const DocumentsScreen = () => {
     }
   };
 
-  const handleDocAction = async doc => {
+  const documentAction = async doc => {
     if (!doc) return;
 
     if (selectMode === 'download') {
@@ -454,11 +454,12 @@ const DocumentsScreen = () => {
               : 'Choose a folder to upload to'
           }
           folders={folders}
-          showOnlyFolders={selectMode === 'upload'}
+          renderMode={selectMode === 'upload' ? 'folders' : 'documents'}
           onSelect={item => {
             setShowSelectModal(false);
-            if (selectMode === 'delete') handleDocAction(item);
-            else if (selectMode === 'upload') {
+            if (selectMode === 'delete') {
+              documentAction(item);
+            } else if (selectMode === 'upload') {
               setSelectedFolderId(item.id);
               setUploadModalVisible(true);
             }

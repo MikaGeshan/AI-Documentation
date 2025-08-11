@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
-  Modal,
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   FlatList,
+  Modal,
+  Animated,
+  Easing,
 } from 'react-native';
-import Accordion from '../Selects/Accordion';
+import { Icon } from '../Icons/Icon';
+import { useExpandStore } from '../../hooks/ComponentHooks/useExpandStore';
 
 const InputSelect = ({
   visible,
@@ -17,27 +19,90 @@ const InputSelect = ({
   onSelect,
   title,
   message,
-  folders,
-  showOnlyFolders = false,
+  folders = [],
+  renderMode,
 }) => {
   const [search, setSearch] = useState('');
-  const [expandedFolder, setExpandedFolder] = useState(null);
-  const filteredFolders = folders
-    .map(folder => ({
-      ...folder,
-      docs: showOnlyFolders
-        ? []
-        : folder.docs.filter(doc =>
-            (doc.title || doc.name || '')
-              .toLowerCase()
-              .includes(search.toLowerCase()),
-          ),
-    }))
-    .filter(folder =>
-      showOnlyFolders
-        ? folder.folderName.toLowerCase().includes(search.toLowerCase())
-        : true,
-    );
+  const { expanded, setExpanded, toggleExpanded } = useExpandStore();
+
+  const modalScale = useRef(new Animated.Value(0.9)).current;
+  const modalOpacity = useRef(new Animated.Value(0)).current;
+  const dropdownHeight = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(modalOpacity, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(modalScale, {
+          toValue: 1,
+          friction: 7,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      setExpanded(true);
+    } else {
+      setExpanded(false);
+      setSearch('');
+      modalOpacity.setValue(0);
+      modalScale.setValue(0.9);
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    Animated.timing(dropdownHeight, {
+      toValue: expanded ? 300 : 0,
+      duration: 200,
+      easing: Easing.ease,
+      useNativeDriver: false,
+    }).start();
+  }, [expanded]);
+
+  const dataList = React.useMemo(() => {
+    let result = [];
+
+    if (renderMode === 'folders') {
+      result = folders
+        .filter(
+          folder =>
+            !search.trim() ||
+            folder.folderName.toLowerCase().includes(search.toLowerCase()),
+        )
+        .map(folder => ({
+          type: 'folder',
+          id: folder.id,
+          folderName: folder.folderName,
+          data: folder,
+        }));
+    } else if (renderMode === 'documents') {
+      return folders.flatMap(folder =>
+        (folder.docs || [])
+          .filter(
+            doc =>
+              !search.trim() ||
+              doc.name.toLowerCase().includes(search.toLowerCase()),
+          )
+          .map(doc => ({
+            type: 'document',
+            id: doc.id,
+            documentName: doc.name,
+            data: doc,
+          })),
+      );
+    }
+
+    console.log('Data Fetched:', {
+      renderMode,
+      search,
+      totalItems: result.length,
+      items: result,
+    });
+
+    return result;
+  }, [folders, renderMode, search]);
 
   const styles = StyleSheet.create({
     overlay: {
@@ -51,6 +116,7 @@ const InputSelect = ({
       borderRadius: 12,
       padding: 16,
       maxHeight: '90%',
+      position: 'relative',
     },
     title: {
       fontWeight: 'bold',
@@ -61,109 +127,134 @@ const InputSelect = ({
       color: '#444',
       marginBottom: 12,
     },
-    input: {
+    searchWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
       borderColor: '#ccc',
       borderWidth: 1,
-      padding: 8,
       borderRadius: 8,
-      marginBottom: 12,
+      backgroundColor: '#f9f9f9',
+      paddingHorizontal: 10,
     },
-    docItem: {
-      paddingVertical: 8,
+    searchInput: {
+      flex: 1,
+      paddingVertical: 10,
+    },
+    dropdown: {
+      marginTop: 4,
+      borderWidth: 1,
+      borderColor: '#ccc',
+      borderRadius: 8,
+      backgroundColor: '#fff',
+      overflow: 'hidden',
+    },
+    folderItem: {
+      paddingVertical: 10,
+      paddingHorizontal: 12,
       borderBottomWidth: 0.5,
       borderColor: '#ccc',
+      fontWeight: 'bold',
+    },
+    documentItem: {
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderBottomWidth: 0.5,
+      borderColor: '#ccc',
+      fontWeight: 'bold',
     },
     noItem: {
       fontStyle: 'italic',
-      paddingVertical: 4,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
       color: '#777',
     },
     closeButton: {
-      marginTop: 12,
-      alignSelf: 'center',
-      backgroundColor: '#4AA8EA',
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 6,
-    },
-    closeText: {
-      fontWeight: 'bold',
-      color: 'white',
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      borderRadius: 20,
+      padding: 6,
+      zIndex: 1000,
     },
   });
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
+    <Modal visible={visible} animationType="none" transparent>
       <View style={styles.overlay}>
-        <View style={styles.container}>
+        <Animated.View
+          style={[
+            styles.container,
+            { opacity: modalOpacity, transform: [{ scale: modalScale }] },
+          ]}
+        >
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder={
-              showOnlyFolders ? 'Search folders...' : 'Search documents...'
-            }
-            value={search}
-            onChangeText={setSearch}
-          />
 
-          {showOnlyFolders ? (
-            <FlatList
-              data={filteredFolders}
-              keyExtractor={item => item.folderName}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.docItem}
-                  onPress={() => {
-                    onSelect(item);
-                    onClose();
-                  }}
-                >
-                  <Text>{item.folderName}</Text>
-                </TouchableOpacity>
-              )}
-              ListEmptyComponent={
-                <Text style={styles.noItem}>(No matching folders)</Text>
-              }
+          <View style={styles.searchWrapper}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search folders or documents..."
+              value={search}
+              onChangeText={text => {
+                setSearch(text);
+                if (!expanded) setExpanded(true);
+              }}
+              onFocus={() => setExpanded(true)}
             />
-          ) : (
-            <ScrollView>
-              {filteredFolders.map(folder => (
-                <Accordion
-                  key={folder.folderName}
-                  title={folder.folderName}
-                  isExpanded={expandedFolder === folder.folderName}
-                  onToggle={() =>
-                    setExpandedFolder(prev =>
-                      prev === folder.folderName ? null : folder.folderName,
-                    )
-                  }
-                >
-                  {folder.docs.length > 0 ? (
-                    folder.docs.map((doc, idx) => (
-                      <TouchableOpacity
-                        key={idx}
-                        style={styles.docItem}
-                        onPress={() => {
-                          onSelect(doc);
-                          onClose();
-                        }}
-                      >
-                        <Text>{doc.title || doc.name}</Text>
-                      </TouchableOpacity>
-                    ))
+            <TouchableOpacity onPress={toggleExpanded}>
+              <Icon
+                name={expanded ? 'ChevronUp' : 'ChevronDown'}
+                size={20}
+                color="black"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <Animated.View style={[styles.dropdown, { height: dropdownHeight }]}>
+            {expanded && (
+              <FlatList
+                data={dataList}
+                keyExtractor={item => `${item.id}`}
+                renderItem={({ item }) =>
+                  item.type === 'folder' ? (
+                    <TouchableOpacity
+                      style={styles.folderItem}
+                      onPress={() => {
+                        setSearch(item.folderName);
+                        onSelect(item.data);
+                        setExpanded(false);
+                      }}
+                    >
+                      <Text style={{ fontWeight: 'bold' }}>
+                        {item.folderName}
+                      </Text>
+                    </TouchableOpacity>
                   ) : (
-                    <Text style={styles.noItem}>(No matching documents)</Text>
-                  )}
-                </Accordion>
-              ))}
-            </ScrollView>
-          )}
+                    <TouchableOpacity
+                      style={styles.documentItem}
+                      onPress={() => {
+                        setSearch(item.documentName);
+                        onSelect(item.data);
+                        setExpanded(false);
+                      }}
+                    >
+                      <Text>{item.documentName}</Text>
+                    </TouchableOpacity>
+                  )
+                }
+                ListEmptyComponent={
+                  <Text style={styles.noItem}>
+                    (No matching folders or documents)
+                  </Text>
+                }
+              />
+            )}
+          </Animated.View>
 
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeText}>Close</Text>
+            <Icon name="X" size={20} color="black" />
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );

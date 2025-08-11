@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { Icon } from '../Icons/Icon';
 
 const InputModal = ({
   visible,
   onClose,
   onSubmit,
-  message = 'Masukkan input:',
-  placeholder = 'Tulis di sini...',
+  message = 'Text Input Message:',
+  placeholder = 'Type here...',
   buttonColor = '#4AA8EA',
 }) => {
   const [inputValue, setInputValue] = useState('');
@@ -61,12 +62,12 @@ const InputModal = ({
       color: '#fff',
       fontWeight: 'bold',
     },
-    cancel: {
-      marginTop: 12,
-      alignItems: 'center',
-    },
-    cancelText: {
-      color: '#888',
+    closeButton: {
+      position: 'absolute',
+      top: 10,
+      right: 10,
+      padding: 8,
+      zIndex: 1,
     },
   });
 
@@ -90,8 +91,8 @@ const InputModal = ({
             <Text style={styles.buttonText}>Submit</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={onClose} style={styles.cancel}>
-            <Text style={styles.cancelText}>Batal</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Icon name={'X'} size={20} color={'black'} />
           </TouchableOpacity>
         </View>
       </View>
