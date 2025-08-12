@@ -21,6 +21,7 @@ import ExploreScreen from '../screens/Explore/ExploreScreen';
 import CreateExploreScreen from '../screens/Explore/CreateExploreScreen';
 import ViewExploreScreen from '../screens/Explore/ViewExploreScreen';
 import EditExploreScreen from '../screens/Explore/EditExploreScreen';
+import ViewExploreListScreen from '../screens/Explore/ViewExploreListScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -162,6 +163,11 @@ export const RootNavigation = () => {
           <Stack.Screen
             name="ViewExplore"
             component={ViewExploreScreen}
+            options={{ headerShown: true }}
+          />
+          <Stack.Screen
+            name="ViewExploreList"
+            component={ViewExploreListScreen}
             options={{ headerShown: true }}
           />
           <Stack.Screen

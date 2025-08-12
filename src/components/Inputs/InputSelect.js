@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -19,8 +19,9 @@ const InputSelect = ({
   onSelect,
   title,
   message,
-  folders = [],
-  renderMode,
+  data = [],
+  filterKey = 'name',
+  renderItem,
 }) => {
   const [search, setSearch] = useState('');
   const { expanded, setExpanded, toggleExpanded } = useExpandStore();
@@ -61,48 +62,14 @@ const InputSelect = ({
     }).start();
   }, [expanded]);
 
-  const dataList = React.useMemo(() => {
-    let result = [];
-
-    if (renderMode === 'folders') {
-      result = folders
-        .filter(
-          folder =>
-            !search.trim() ||
-            folder.folderName.toLowerCase().includes(search.toLowerCase()),
-        )
-        .map(folder => ({
-          type: 'folder',
-          id: folder.id,
-          folderName: folder.folderName,
-          data: folder,
-        }));
-    } else if (renderMode === 'documents') {
-      return folders.flatMap(folder =>
-        (folder.docs || [])
-          .filter(
-            doc =>
-              !search.trim() ||
-              doc.name.toLowerCase().includes(search.toLowerCase()),
-          )
-          .map(doc => ({
-            type: 'document',
-            id: doc.id,
-            documentName: doc.name,
-            data: doc,
-          })),
-      );
-    }
-
-    console.log('Data Fetched:', {
-      renderMode,
-      search,
-      totalItems: result.length,
-      items: result,
-    });
-
-    return result;
-  }, [folders, renderMode, search]);
+  const filteredData = useMemo(() => {
+    if (!search.trim()) return data;
+    return data.filter(item =>
+      String(item[filterKey] || '')
+        .toLowerCase()
+        .includes(search.toLowerCase()),
+    );
+  }, [data, filterKey, search]);
 
   const styles = StyleSheet.create({
     overlay: {
@@ -148,20 +115,6 @@ const InputSelect = ({
       backgroundColor: '#fff',
       overflow: 'hidden',
     },
-    folderItem: {
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-      borderBottomWidth: 0.5,
-      borderColor: '#ccc',
-      fontWeight: 'bold',
-    },
-    documentItem: {
-      paddingVertical: 10,
-      paddingHorizontal: 12,
-      borderBottomWidth: 0.5,
-      borderColor: '#ccc',
-      fontWeight: 'bold',
-    },
     noItem: {
       fontStyle: 'italic',
       paddingVertical: 8,
@@ -193,7 +146,7 @@ const InputSelect = ({
           <View style={styles.searchWrapper}>
             <TextInput
               style={styles.searchInput}
-              placeholder="Search folders or documents..."
+              placeholder="Search..."
               value={search}
               onChangeText={text => {
                 setSearch(text);
@@ -213,39 +166,36 @@ const InputSelect = ({
           <Animated.View style={[styles.dropdown, { height: dropdownHeight }]}>
             {expanded && (
               <FlatList
-                data={dataList}
-                keyExtractor={item => `${item.id}`}
+                data={filteredData}
+                keyExtractor={(item, idx) => `${item.id || idx}`}
                 renderItem={({ item }) =>
-                  item.type === 'folder' ? (
+                  renderItem ? (
+                    renderItem(item, () => {
+                      setSearch(item[filterKey]);
+                      onSelect(item);
+                      setExpanded(false);
+                    })
+                  ) : (
                     <TouchableOpacity
-                      style={styles.folderItem}
+                      style={{
+                        padding: 12,
+                        borderBottomWidth: 0.5,
+                        borderColor: '#ccc',
+                      }}
                       onPress={() => {
-                        setSearch(item.folderName);
-                        onSelect(item.data);
+                        setSearch(item[filterKey]);
+                        onSelect(item);
                         setExpanded(false);
                       }}
                     >
                       <Text style={{ fontWeight: 'bold' }}>
-                        {item.folderName}
+                        {item[filterKey]}
                       </Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.documentItem}
-                      onPress={() => {
-                        setSearch(item.documentName);
-                        onSelect(item.data);
-                        setExpanded(false);
-                      }}
-                    >
-                      <Text>{item.documentName}</Text>
                     </TouchableOpacity>
                   )
                 }
                 ListEmptyComponent={
-                  <Text style={styles.noItem}>
-                    (No matching folders or documents)
-                  </Text>
+                  <Text style={styles.noItem}>(No matching items)</Text>
                 }
               />
             )}

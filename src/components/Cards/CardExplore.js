@@ -1,34 +1,36 @@
-import { Image, StyleSheet, Text, View, Platform } from 'react-native';
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableWithoutFeedback,
+  View,
+} from 'react-native';
 import React from 'react';
-import ExploreButton from '../Buttons/ExploreButton';
+import { Icon } from '../Icons/Icon';
 
-const CardExplore = ({ title, filter, description, image, onPress }) => {
+const CardExplore = ({
+  title,
+  filter,
+  image,
+  onPress,
+  onPressEdit,
+  isEditing,
+  onPressDelete,
+  isDeleting,
+}) => {
   const styles = StyleSheet.create({
     container: {
-      width: 170,
-      backgroundColor: '#FFF',
-      borderRadius: 12,
+      width: '100%',
+      backgroundColor: 'rgba(0, 0, 0, 0)',
       paddingVertical: 10,
       paddingHorizontal: 8,
-      justifyContent: 'flex-start',
       alignItems: 'center',
       marginHorizontal: 6,
-
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.1,
-          shadowRadius: 4,
-        },
-        android: {
-          elevation: 4,
-        },
-      }),
     },
     imageContainer: {
-      width: 110,
-      height: 110,
+      width: 150,
+      height: 150,
       borderRadius: 10,
       overflow: 'hidden',
       backgroundColor: '#FEF4E2',
@@ -40,50 +42,50 @@ const CardExplore = ({ title, filter, description, image, onPress }) => {
     },
     infoContainer: {
       marginTop: 10,
-      alignItems: 'center',
+      alignItems: 'flex-start',
       width: '100%',
     },
     title: {
       color: 'black',
       fontSize: 16,
-      fontWeight: '600',
-      textAlign: 'center',
+      fontFamily: 'poppins',
+      fontWeight: 'bold',
+      textAlign: 'left',
     },
     filter: {
       color: '#666',
-      fontSize: 12,
+      fontSize: 13,
       marginTop: 2,
-      textAlign: 'center',
-    },
-    description: {
-      color: '#333',
-      fontSize: 12,
-      marginTop: 4,
-      textAlign: 'center',
-      paddingHorizontal: 4,
-    },
-    buttonContainer: {
-      marginTop: 8,
+      textAlign: 'left',
     },
   });
 
   return (
-    <View style={styles.container}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: image }} style={styles.image} />
-      </View>
-
-      <View style={styles.infoContainer}>
-        <Text style={styles.title}>{title}</Text>
-        {!!filter && <Text style={styles.filter}>{filter}</Text>}
-        <Text style={styles.description} numberOfLines={3} ellipsizeMode="tail">
-          {description}
-        </Text>
-        <View style={styles.buttonContainer}>
-          <ExploreButton onPress={onPress} />
+    <TouchableWithoutFeedback onPress={onPress}>
+      <View style={styles.container}>
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: image }} style={styles.image} />
         </View>
+        <View style={styles.infoContainer}>
+          <Text style={styles.title}>{title}</Text>
+          {!!filter && <Text style={styles.filter}>{filter}</Text>}
+        </View>
+        {(isEditing || isDeleting) && (
+          <View style={{ flexDirection: 'row', marginTop: 8 }}>
+            {isEditing && (
+              <Pressable onPress={onPressEdit} style={{ marginRight: 12 }}>
+                <Icon name="SquarePen" size={20} color="black" />
+              </Pressable>
+            )}
+            {isDeleting && (
+              <Pressable onPress={onPressDelete}>
+                <Icon name="Trash" size={20} color="red" />
+              </Pressable>
+            )}
+          </View>
+        )}
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 

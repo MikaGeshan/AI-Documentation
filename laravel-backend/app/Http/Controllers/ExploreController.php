@@ -13,12 +13,12 @@ class ExploreController extends Controller
      */
    public function index()
     {
-    $explore = Explore::all();
+        $explore = Explore::all();
 
-    return response()->json([
-        'message' => 'Explore items retrieved successfully',
-        'data' => $explore,
-    ], 200);
+        return response()->json([
+            'message' => 'Explore items retrieved successfully',
+            'data' => $explore,
+        ], 200);
     }
 
     /**
@@ -34,33 +34,33 @@ class ExploreController extends Controller
      */
    public function store(Request $request)
     {
-    $validated = $request->validate([
-        'title' => 'required|string|max:255',
-        'description' => 'required|string|max:100',
-        'web_link' => 'required|string',
-        'filter' => 'nullable|string',
-        'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
-    ]);
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'required|string|max:100',
+            'web_link' => 'required|string',
+            'filter' => 'nullable|string',
+            'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
 
-    if ($request->hasFile('image')) {
-        $imagePath = $request->file('image')->store('explore_images', 'public');
-        $imageUrl = Storage::url($imagePath); 
-    } else {
-        return response()->json(['error' => 'Image upload failed'], 422);
-    }
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('explore_images', 'public');
+            $imageUrl = Storage::url($imagePath); 
+        } else {
+            return response()->json(['error' => 'Image upload failed'], 422);
+        }
 
-    $explore = Explore::create([
-        'title' => $validated['title'],
-        'description' => $validated['description'],
-        'web_link' => $validated['web_link'],
-        'filter' => $validated['filter'] ?? null,
-        'image' => $imageUrl, 
-    ]);
+        $explore = Explore::create([
+            'title' => $validated['title'],
+            'description' => $validated['description'],
+            'web_link' => $validated['web_link'],
+            'filter' => $validated['filter'] ?? null,
+            'image' => $imageUrl, 
+        ]);
 
-    return response()->json([
-        'message' => 'Explore item created successfully',
-        'data' => $explore,
-    ], 201);
+        return response()->json([
+            'message' => 'Explore item created successfully',
+            'data' => $explore,
+        ], 201);
     }
 
     /**
@@ -82,16 +82,62 @@ class ExploreController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Explore $explore)
+    public function update(Request $request, $id)
     {
-        //
+        $explore = Explore::findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'sometimes|required|string|max:255',
+            'description' => 'sometimes|required|string|max:100',
+            'web_link' => 'sometimes|required|string',
+            'filter' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        if ($request->hasFile('image')) {
+            if ($explore->image) {
+                $oldPath = str_replace('/storage/', '', $explore->image);
+                Storage::disk('public')->delete($oldPath);
+            }
+
+            $imagePath = $request->file('image')->store('explore_images', 'public');
+            $imageUrl = Storage::url($imagePath);
+
+            $validated['image'] = $imageUrl;
+        } else {
+            $validated['image'] = $explore->image;
+        }
+
+        $explore->update($validated);
+
+        $explore->refresh();
+
+        return response()->json([
+            'message' => 'Explore item updated successfully',
+            'data' => $explore,
+        ], 200);
     }
+
+
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Explore $explore)
+    public function destroy($id)
     {
-        //
+        try {
+            $explore = Explore::findOrFail($id);
+            $explore->delete();
+
+            return response()->json([
+                'message' => 'Explore item deleted successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to delete explore item',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
+
 }

@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Icon } from '../Icons/Icon';
 
 const Dropdown = ({ selectedValue = [], onValueChange }) => {
-  const [selectedValues, setSelectedValues] = useState(selectedValue);
+  const [selectedValues, setSelectedValues] = useState(
+    Array.isArray(selectedValue) ? selectedValue : [],
+  );
 
   const items = [
     { label: 'Mobile', value: 'mobile' },
@@ -19,6 +21,10 @@ const Dropdown = ({ selectedValue = [], onValueChange }) => {
     { label: 'Android', value: 'android' },
     { label: 'IOS', value: 'ios' },
   ];
+
+  useEffect(() => {
+    setSelectedValues(Array.isArray(selectedValue) ? selectedValue : []);
+  }, [selectedValue]);
 
   const toggleSelection = value => {
     if (!value) return;
@@ -91,15 +97,16 @@ const Dropdown = ({ selectedValue = [], onValueChange }) => {
       </View>
 
       <View style={styles.chipsContainer}>
-        {selectedValues.map(value => (
-          <TouchableOpacity
-            key={value}
-            style={styles.chip}
-            onPress={() => toggleSelection(value)}
-          >
-            <Text style={styles.chipText}>{value}</Text>
-          </TouchableOpacity>
-        ))}
+        {Array.isArray(selectedValues) &&
+          selectedValues.map(value => (
+            <TouchableOpacity
+              key={value}
+              style={styles.chip}
+              onPress={() => toggleSelection(value)}
+            >
+              <Text style={styles.chipText}>{value}</Text>
+            </TouchableOpacity>
+          ))}
       </View>
     </View>
   );

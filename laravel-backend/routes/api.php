@@ -26,6 +26,9 @@ Route::post('/upload-docs', [GoogleDriveController::class, 'uploadFileToDrive'])
 // Explore Routes
 Route::get('/explore-contents', [ExploreController::class, 'index']);   
 Route::post('/create-explore', [ExploreController::class, 'store']);
+Route::put('/update-explore/{id}', [ExploreController::class, 'update']);
+Route::delete('/delete-explore/{id}', [ExploreController::class, 'destroy']);
+
 
 // Auth Middleware
 Route::middleware(['auth:api'])->group(function () {

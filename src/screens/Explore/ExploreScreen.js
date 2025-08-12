@@ -3,21 +3,23 @@ import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
-  View,
-  Text,
   RefreshControl,
 } from 'react-native';
 import React, { useEffect, useState, useCallback } from 'react';
 import useAuthStore from '../../hooks/auth/useAuthStore';
 import FloatingActionButton from '../../components/Buttons/FloatingActionButton';
-import CardExplore from '../../components/Cards/CardExplore';
 import { useNavigation } from '@react-navigation/native';
 import Config from '../../configs/config';
 import axios from 'axios';
+import ExploreSection from '../../components/Sections/ExploreSection';
+import { useEditingStore } from '../../hooks/ComponentHooks/useEditingStore';
+import { useDeletingStore } from '../../hooks/ComponentHooks/useDeletingStore';
 
 const ExploreScreen = () => {
   const navigation = useNavigation();
   const isAdmin = useAuthStore(state => state.isAdmin);
+  const { setIsEditing } = useEditingStore();
+  const { setIsDeleting } = useDeletingStore();
   const [exploreData, setExploreData] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -30,6 +32,13 @@ const ExploreScreen = () => {
     } catch (error) {
       console.error('Failed to fetch explore content:', error);
     }
+  };
+
+  const handleNavigation = (
+    filter = 'all',
+    sort = { field: 'id', order: 'asc' },
+  ) => {
+    navigation.navigate('ViewExploreList', { filter, sort });
   };
 
   const onRefresh = useCallback(async () => {
@@ -49,25 +58,9 @@ const ExploreScreen = () => {
     keyboardView: {
       flex: 1,
     },
-    scrollContent: {
-      padding: 12,
-    },
-    row: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      marginBottom: 12,
-    },
-    cardWrapper: {
-      width: '48%',
-      marginBottom: 12,
-      alignItems: 'center',
-    },
-    emptyText: {
-      textAlign: 'center',
-      fontSize: 16,
-      color: '#666',
-      marginTop: 40,
+    scrollView: {
+      flex: 1,
+      padding: 16,
     },
   });
 
@@ -75,33 +68,44 @@ const ExploreScreen = () => {
     <SafeAreaView style={styles.safeView}>
       <KeyboardAvoidingView style={styles.keyboardView}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          style={styles.scrollView}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
         >
-          {exploreData.length === 0 ? (
-            <Text style={styles.emptyText}>No explore items available.</Text>
-          ) : (
-            <View style={styles.row}>
-              {exploreData.map((item, index) => (
-                <View key={index} style={styles.cardWrapper}>
-                  <CardExplore
-                    title={item.title}
-                    filter={item.filter}
-                    description={item.description}
-                    image={`${Config.API_URL}${item.image}`}
-                    onPress={() =>
-                      navigation.navigate('ViewExplore', {
-                        id: item.id,
-                        web_link: item.web_link,
-                      })
-                    }
-                  />
-                </View>
-              ))}
-            </View>
-          )}
+          <ExploreSection
+            title="By Filter"
+            data={exploreData}
+            filterFn={item => item.filter?.toLowerCase().includes('mobile')}
+            emptyText="No items available at the moment."
+            onSeeAll={() => handleNavigation('mobile')}
+            navigation={navigation}
+            styles={styles}
+          />
+
+          <ExploreSection
+            title="By Title"
+            data={exploreData}
+            sortFn={(a, b) => a.title.localeCompare(b.title)}
+            emptyText="No items available at the moment."
+            onSeeAll={() =>
+              handleNavigation('all', { field: 'title', order: 'asc' })
+            }
+            navigation={navigation}
+            styles={styles}
+          />
+
+          <ExploreSection
+            title="Explore All"
+            data={exploreData}
+            sortFn={(a, b) => Number(a.id) - Number(b.id)}
+            emptyText="No items available at the moment."
+            onSeeAll={() =>
+              handleNavigation('all', { field: 'id', order: 'asc' })
+            }
+            navigation={navigation}
+            styles={styles}
+          />
         </ScrollView>
 
         {isAdmin && (
@@ -119,13 +123,11 @@ const ExploreScreen = () => {
                 iconName: 'NotebookPen',
                 iconColor: '#fff',
                 iconSize: 25,
-                onPress: () => console.log('Mengedit Dokumentasi'),
-              },
-              {
-                iconName: 'Trash',
-                iconColor: '#fff',
-                iconSize: 25,
-                onPress: () => console.log('Menghapus Dokumentasi'),
+                onPress: () => {
+                  setIsEditing(true);
+                  setIsDeleting(true);
+                  handleNavigation('all', { field: 'id', order: 'asc' });
+                },
               },
             ]}
           />
