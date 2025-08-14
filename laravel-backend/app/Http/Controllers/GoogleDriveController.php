@@ -4,18 +4,40 @@ namespace App\Http\Controllers;
 
 use App\Services\GoogleTokenService;
 use Google\Service\Drive as Google_Service_Drive;
+use Google\Service\Docs as Google_Service_Docs;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class GoogleDriveController extends Controller
 {
+     protected string $accountEmail;
+
+    public function __construct()
+    {
+        $this->accountEmail = env('GOOGLE_ADMIN_EMAIL'); 
+    }
+
+    protected function getClient()
+    {
+        return GoogleTokenService::getAuthorizedClient($this->accountEmail);
+    }
+
+    protected function getDriveService()
+    {
+        return new Google_Service_Drive($this->getClient());
+    }
+
+    protected function getDocsService()
+    {
+        return new Google_Service_Docs($this->getClient());
+    }
+
     public function getDriveContents()
     {
         try {
-            $client = GoogleTokenService::getAuthorizedClient();
-            $drive = new Google_Service_Drive($client);
-
+            $drive = $this->getDriveService();
             $parentFolderId = env('GOOGLE_DRIVE_FOLDER_ID');
+
             $mainFolder = $drive->files->get($parentFolderId, [
                 'fields' => 'id, name, webViewLink'
             ]);
@@ -60,8 +82,9 @@ class GoogleDriveController extends Controller
                 'subfolders' => $subfolderData
             ]);
         } catch (\Exception $e) {
+            Log::error('GoogleDriveController@getDriveContents', ['error' => $e->getMessage()]);
             return response()->json([
-                'error' => 'Gagal mengambil konten Drive.',
+                'error' => 'Failed to fetch Drive contents.',
                 'details' => $e->getMessage()
             ], 500);
         }
@@ -73,8 +96,9 @@ class GoogleDriveController extends Controller
         $fileId = $request->input('file_id');
 
         try {
-            $client = GoogleTokenService::getAuthorizedClient();
-            $drive = new Google_Service_Drive($client);
+            $client = $this->getClient();
+            $drive = $this->getDriveService();
+
             $file = $drive->files->get($fileId, ['fields' => 'name']);
             $fileName = ($file->name ?? 'downloaded') . '.pdf';
             $exportUrl = "https://www.googleapis.com/drive/v3/files/{$fileId}/export?mimeType=application/pdf";
@@ -92,8 +116,9 @@ class GoogleDriveController extends Controller
                 'Content-Disposition' => "attachment; filename=\"$fileName\"",
             ]);
         } catch (\Exception $e) {
+            Log::error('GoogleDriveController@downloadGoogleDocs', ['error' => $e->getMessage()]);
             return response()->json([
-                'error' => 'Gagal mengunduh dokumen.',
+                'error' => 'Failed to download Google Doc.',
                 'details' => $e->getMessage()
             ], 500);
         }

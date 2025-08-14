@@ -14,14 +14,16 @@ import axios from 'axios';
 import ExploreSection from '../../components/Sections/ExploreSection';
 import { useEditingStore } from '../../hooks/ComponentHooks/useEditingStore';
 import { useDeletingStore } from '../../hooks/ComponentHooks/useDeletingStore';
+import { useRefreshStore } from '../../hooks/ComponentHooks/useRefreshStore';
 
 const ExploreScreen = () => {
   const navigation = useNavigation();
   const isAdmin = useAuthStore(state => state.isAdmin);
   const { setIsEditing } = useEditingStore();
   const { setIsDeleting } = useDeletingStore();
+  const { isRefreshing, setIsRefreshing } = useRefreshStore();
+
   const [exploreData, setExploreData] = useState([]);
-  const [refreshing, setRefreshing] = useState(false);
 
   const getContent = async () => {
     try {
@@ -42,10 +44,10 @@ const ExploreScreen = () => {
   };
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
+    setIsRefreshing(true);
     await getContent();
-    setRefreshing(false);
-  }, []);
+    setIsRefreshing(false);
+  }, [setIsRefreshing]);
 
   useEffect(() => {
     getContent();
@@ -70,7 +72,7 @@ const ExploreScreen = () => {
         <ScrollView
           style={styles.scrollView}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
           }
         >
           <ExploreSection

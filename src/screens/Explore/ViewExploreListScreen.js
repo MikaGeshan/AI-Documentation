@@ -14,6 +14,7 @@ import Config from '../../configs/config';
 import CardExplore from '../../components/Cards/CardExplore';
 import { useEditingStore } from '../../hooks/ComponentHooks/useEditingStore';
 import { useDeletingStore } from '../../hooks/ComponentHooks/useDeletingStore';
+import { useRefreshStore } from '../../hooks/ComponentHooks/useRefreshStore';
 
 const ViewExploreListScreen = () => {
   const route = useRoute();
@@ -22,10 +23,11 @@ const ViewExploreListScreen = () => {
 
   const { isEditing } = useEditingStore();
   const { isDeleting } = useDeletingStore();
+  const { isRefreshing, setIsRefreshing } = useRefreshStore();
 
   const [exploreData, setExploreData] = useState([]);
   const [displayData, setDisplayData] = useState([]);
-  const [refreshing, setRefreshing] = useState(false);
+  // const [refreshing, setRefreshing] = useState(false);
 
   const getContent = async () => {
     try {
@@ -38,15 +40,33 @@ const ViewExploreListScreen = () => {
     }
   };
 
-  const handleDeleteExplore = async () => {
-    console.log('Deleting Explore Item');
+  const handleDeleteExplore = async id => {
+    try {
+      const response = await axios.delete(
+        `${Config.API_URL}/api/delete-explore/${id}`,
+      );
+      if (response.status === 200) {
+        console.log('Success', 'Explore item deleted successfully.');
+        if (typeof onRefresh === 'function') {
+          await onRefresh();
+        }
+      } else {
+        console.warn('Error', 'Failed to delete explore item.');
+      }
+    } catch (error) {
+      console.error('Delete error:', error.response?.data || error);
+      console.warn(
+        'Error',
+        error.response?.data?.message || 'Failed to delete explore item',
+      );
+    }
   };
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
+    setIsRefreshing(true);
     await getContent();
-    setRefreshing(false);
-  }, []);
+    setIsRefreshing(false);
+  }, [setIsRefreshing]);
 
   useEffect(() => {
     getContent();
@@ -101,7 +121,7 @@ const ViewExploreListScreen = () => {
         <ScrollView
           style={styles.scrollView}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
           }
         >
           {displayData.length === 0 ? (
@@ -129,7 +149,7 @@ const ViewExploreListScreen = () => {
                       onRefresh,
                     })
                   }
-                  onPressDelete={handleDeleteExplore}
+                  onPressDelete={() => handleDeleteExplore(item.id)}
                 />
               </View>
             ))

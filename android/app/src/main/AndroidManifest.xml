@@ -25,6 +25,9 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
       android:supportsRtl="true">
+      <!-- <meta-data
+      android:name="com.google.android.gms.client_id"
+      android:value="26723233307-1kheh5oicaamssnd1i3fd63fhu7useen.apps.googleusercontent.com"/> -->
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

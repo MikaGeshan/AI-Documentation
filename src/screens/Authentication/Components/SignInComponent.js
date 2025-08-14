@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   SafeAreaView,
   StyleSheet,
@@ -10,158 +9,42 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 
-import InputText from '../../components/Inputs/InputText';
-import Button from '../../components/Buttons/Button';
-import Hyperlink from '../../components/Buttons/Hyperlink';
-import { Icon } from '../../components/Icons/Icon';
-import SuccessDialog from '../../components/Alerts/SuccessDialog';
-import axios from 'axios';
+import InputText from '../../../components/Inputs/InputText';
+import Button from '../../../components/Buttons/Button';
+import Hyperlink from '../../../components/Buttons/Hyperlink';
+import { Icon } from '../../../components/Icons/Icon';
+import SuccessDialog from '../../../components/Alerts/SuccessDialog';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
-import { signInWithGoogle } from '../../services/googleAuthService';
-import useAuthStore from '../../hooks/auth/useAuthStore';
-import Config from '../../configs/config';
 
-const LoginScreen = () => {
-  const { login } = useAuthStore();
-  const navigation = useNavigation();
-
-  const [formData, setFormData] = useState({
-    emailOrName: '',
-    password: '',
-  });
-
-  const [errors, setErrors] = useState({
-    emailOrName: '',
-    password: '',
-  });
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const updateFormData = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const isValidEmail = email => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    let isValid = true;
-
-    if (!formData.emailOrName.trim()) {
-      newErrors.emailOrName = 'Email or username is required';
-      isValid = false;
-    }
-
-    if (!formData.password.trim()) {
-      newErrors.password = 'Password is required';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  const createLoginPayload = () => {
-    const trimmedInput = formData.emailOrName.trim();
-    return {
-      password: formData.password,
-      ...(isValidEmail(trimmedInput)
-        ? { email: trimmedInput.toLowerCase() }
-        : { name: trimmedInput }),
-    };
-  };
-
-  const handleSuccessfulLogin = async data => {
-    try {
-      const { access_token, user } = data;
-
-      await login({ access_token, user });
-
-      setShowSuccessDialog(true);
-
-      console.log(setShowSuccessDialog);
-
-      setTimeout(() => {
-        setTimeout(() => {
-          setShowSuccessDialog(false);
-          navigation.replace('ScreenBottomTabs');
-        }, 3000);
-      }, 100);
-    } catch (error) {
-      console.error('Login handling failed:', error);
-    }
-  };
-
-  const handleLoginError = data => {
-    const errorMessage =
-      data?.message || 'Invalid credentials. Please try again.';
-
-    setErrors({
-      emailOrName: 'Please check your credentials',
-      password: 'Please check your credentials',
-    });
-
-    Alert.alert('Login Failed', errorMessage);
-  };
-
-  const handleLogin = async () => {
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-
-    try {
-      const payload = createLoginPayload();
-
-      const response = await axios.post(
-        `${Config.API_URL}/api/login`,
-        payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-        },
-      );
-
-      console.log(response.data);
-
-      handleSuccessfulLogin(response.data);
-    } catch (error) {
-      console.error('Login error:', error);
-
-      if (error.response && error.response.data) {
-        handleLoginError(error.response.data);
-      } else {
-        Alert.alert(
-          'Connection Error',
-          'Unable to connect to server. Please check your internet connection and try again.',
-        );
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const registerLink = () => {
-    navigation.navigate('Register');
-  };
-
-  const handleForgotPassword = () => {
-    Alert.alert(
-      'Forgot Password',
-      'This feature will be available soon. Please contact support if you need help.',
-    );
-  };
+const SignInComponent = ({
+  formData,
+  errors,
+  showPassword,
+  showSuccessDialog,
+  isLoading,
+  updateFormData,
+  setShowPassword,
+  setShowSuccessDialog,
+  handleLogin,
+  handleForgotPassword,
+  signInWithGoogle,
+  navigateToRegister,
+}) => {
+  // console.log('SignInComponent props:', {
+  //   formData,
+  //   errors,
+  //   showPassword,
+  //   showSuccessDialog,
+  //   isLoading,
+  //   updateFormData,
+  //   setShowPassword,
+  //   setShowSuccessDialog,
+  //   handleLogin,
+  //   handleForgotPassword,
+  //   signInWithGoogle,
+  //   navigateToRegister,
+  // });
 
   const styles = StyleSheet.create({
     safeArea: {
@@ -320,7 +203,7 @@ const LoginScreen = () => {
                 placeholder="Enter your email or username"
                 autoCapitalize="none"
                 autoCorrect={false}
-                value={formData.emailOrName}
+                value={formData?.emailOrName || ''}
                 onChangeText={value => updateFormData('emailOrName', value)}
                 style={[
                   styles.textInput,
@@ -385,12 +268,7 @@ const LoginScreen = () => {
 
             <View style={styles.googleButtonContainer}>
               <GoogleSigninButton
-                onPress={() =>
-                  signInWithGoogle({
-                    navigation,
-                    handleSuccessfulLogin,
-                  })
-                }
+                onPress={() => signInWithGoogle()}
                 size={GoogleSigninButton.Size.Wide}
                 color={GoogleSigninButton.Color.Dark}
               />
@@ -398,7 +276,7 @@ const LoginScreen = () => {
 
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>
-              <Hyperlink text="Register Now!" onPress={registerLink} />
+              <Hyperlink text="Register Now!" onPress={navigateToRegister} />
             </View>
           </View>
         </ScrollView>
@@ -407,4 +285,4 @@ const LoginScreen = () => {
   );
 };
 
-export default LoginScreen;
+export default SignInComponent;

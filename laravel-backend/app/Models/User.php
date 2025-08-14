@@ -30,6 +30,10 @@ class User extends Authenticatable implements JWTSubject
         'name',
         'email',
         'password',
+        'google_id',
+        'access_token',
+        'refresh_token',
+        'expires_at',
     ];
 
     /**

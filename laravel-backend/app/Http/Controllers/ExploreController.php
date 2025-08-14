@@ -21,7 +21,7 @@ class ExploreController extends Controller
         ], 200);
     }
 
-    /**
+    /**CMa
      * Show the form for creating a new resource.
      */
     public function create()

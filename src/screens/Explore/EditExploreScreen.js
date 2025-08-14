@@ -14,11 +14,11 @@ import InputText from '../../components/Inputs/InputText';
 import Dropdown from '../../components/Selects/Dropdown';
 import Button from '../../components/Buttons/Button';
 import Config from '../../configs/config';
-import { useCreateForm } from '../../hooks/forms/useCreateForm';
 import axios from 'axios';
 import { launchImageLibrary } from 'react-native-image-picker';
 import SuccessDialog from '../../components/Alerts/SuccessDialog';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { RegisterActions } from '../Authentication/Stores/RegisterActions';
 
 const EditExploreScreen = () => {
   const [showDialog, setShowDialog] = useState(false);
@@ -28,8 +28,22 @@ const EditExploreScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const { onRefresh, exploreItem } = route.params || {};
-  const { formData, errors, setFormData, validateForm, resetForm } =
-    useCreateForm();
+  const {
+    formData,
+    errors,
+    setFormData,
+    validateForm,
+    resetForm,
+    // setErrors,
+    // showPassword,
+    // togglePassword,
+    // showConfirmPassword,
+    // setShowConfirmPassword,
+    // showSuccessDialog,
+    // setShowSuccessDialog,
+    // isLoading,
+    // setIsLoading,
+  } = RegisterActions();
 
   useEffect(() => {
     if (exploreItem) {

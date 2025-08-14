@@ -6,9 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import WelcomeScreen from '../screens/WelcomeScreen';
 import DocumentsScreen from '../screens/Main/DocumentsScreen';
 import ChatScreen from '../screens/Main/ChatScreen';
-import LoginScreen from '../screens/Auth/LoginScreen';
-import RegisterScreen from '../screens/Auth/RegisterScreen';
-import VerifyOTPScreen from '../screens/Auth/VerifyOTPScreen';
 
 import Header from '../components/Headers/Header';
 import { Icon } from '../components/Icons/Icon';
@@ -22,6 +19,9 @@ import CreateExploreScreen from '../screens/Explore/CreateExploreScreen';
 import ViewExploreScreen from '../screens/Explore/ViewExploreScreen';
 import EditExploreScreen from '../screens/Explore/EditExploreScreen';
 import ViewExploreListScreen from '../screens/Explore/ViewExploreListScreen';
+import SignInContainer from '../screens/Authentication/Containers/SignInContainer';
+import RegisterContainer from '../screens/Authentication/Containers/RegisterContainer';
+import VerifyOTPContainer from '../screens/Authentication/Containers/VerifyOTPContainer';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -148,9 +148,9 @@ export const RootNavigation = () => {
 
       {!isAuthenticated && (
         <>
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={RegisterScreen} />
-          <Stack.Screen name="Verify" component={VerifyOTPScreen} />
+          <Stack.Screen name="Login" component={SignInContainer} />
+          <Stack.Screen name="Register" component={RegisterContainer} />
+          <Stack.Screen name="Verify" component={VerifyOTPContainer} />
         </>
       )}
 
