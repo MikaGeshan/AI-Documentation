@@ -258,7 +258,7 @@ class GoogleDriveController extends Controller
     {
         $request->validate(['file_id' => 'required|string']);
         $fileId = $request->input('file_id');
-        $email = $request->user()->email;
+        $email = $request->user()->email ?? $request->input('email');
 
         try {
             $client = GoogleTokenService::getAuthorizedClient($email);
