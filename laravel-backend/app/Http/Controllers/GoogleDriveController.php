@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\GoogleTokenService;
 use Google\Service\Drive as Google_Service_Drive;
 use Google\Service\Docs as Google_Service_Docs;
+use Google\Service\Drive\DriveFile as Google_Service_Drive_DriveFile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -90,6 +91,101 @@ class GoogleDriveController extends Controller
         }
     }
 
+     public function createGoogleDriveFolder(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'email' => 'required|email'
+        ]);
+
+        $email = $request->email; 
+
+        try {
+            $client = GoogleTokenService::getAuthorizedClient($email);
+            $service = new Google_Service_Drive($client);
+
+            $folder = $service->files->create(new Google_Service_Drive_DriveFile([
+                'name' => $request->name,
+                'mimeType' => 'application/vnd.google-apps.folder',
+                'parents' => [env('GOOGLE_DRIVE_FOLDER_ID')],
+            ]), [
+                'fields' => 'id, name',
+            ]);
+
+            return response()->json([
+                'message' => 'Folder berhasil dibuat',
+                'folder' => $folder,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal membuat folder.',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+     public function uploadFileToDrive(Request $request)
+    {
+        // Log::info('MASUK uploadFileToDrive', $request->all());
+
+        $request->validate([
+            'folder_id' => 'required|string',
+            'file' => 'required|file|mimes:pdf|max:5120',
+        ]);
+
+        $email = $request->user()->email ?? $request->input('email');
+
+
+        try {
+            $client = GoogleTokenService::getAuthorizedClient($email);
+            $service = new Google_Service_Drive($client);
+
+            $file = $request->file('file');
+            $driveFile = new Google_Service_Drive_DriveFile([
+                'name' => $file->getClientOriginalName(),
+                'parents' => [$request->input('folder_id')],
+            ]);
+
+            $uploaded = $service->files->create($driveFile, [
+                'data' => file_get_contents($file->getPathname()),
+                'mimeType' => $file->getClientMimeType(),
+                'uploadType' => 'multipart',
+            ]);
+
+            Log::info('Upload success:', ['id' => $uploaded->id]);
+
+            return response()->json([
+                'message' => 'File berhasil diupload ke Google Drive.',
+                'file_id' => $uploaded->id,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Upload Failed:', ['message' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Gagal upload file: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function deleteGoogleDocs(Request $request)
+    {
+        $request->validate(['file_id' => 'required|string']);
+        $email = $request->user()->email ?? $request->input('email');
+
+
+        try {
+            $client = GoogleTokenService::getAuthorizedClient($email);
+            $drive = new Google_Service_Drive($client);
+            $drive->files->delete($request->input('file_id'));
+
+            return response()->json(['message' => 'File berhasil dihapus.']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Gagal menghapus file.',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function downloadGoogleDocs(Request $request)
     {
         $request->validate(['file_id' => 'required|string']);
@@ -124,59 +220,15 @@ class GoogleDriveController extends Controller
         }
     }
 
-    public function deleteGoogleDocs(Request $request)
-    {
-        $request->validate(['file_id' => 'required|string']);
-
-        try {
-            $client = GoogleTokenService::getAuthorizedClient();
-            $drive = new Google_Service_Drive($client);
-            $drive->files->delete($request->input('file_id'));
-
-            return response()->json(['message' => 'File berhasil dihapus.']);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Gagal menghapus file.',
-                'details' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function createGoogleDriveFolder(Request $request)
-    {
-        $request->validate(['name' => 'required|string']);
-
-        try {
-            $client = GoogleTokenService::getAuthorizedClient();
-            $service = new Google_Service_Drive($client);
-
-            $folder = $service->files->create(new \Google_Service_Drive_DriveFile([
-                'name' => $request->name,
-                'mimeType' => 'application/vnd.google-apps.folder',
-                'parents' => [env('GOOGLE_DRIVE_FOLDER_ID')],
-            ]), [
-                'fields' => 'id, name',
-            ]);
-
-            return response()->json([
-                'message' => 'Folder berhasil dibuat',
-                'folder' => $folder,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Gagal membuat folder.',
-                'details' => $e->getMessage()
-            ], 500);
-        }
-    }
 
     public function viewGoogleDocsAsPdf(Request $request)
     {
         $request->validate(['file_id' => 'required|string']);
         $fileId = $request->input('file_id');
+        $email = $request->user()->email;
 
         try {
-            $client = GoogleTokenService::getAuthorizedClient();
+            $client = GoogleTokenService::getAuthorizedClient($email);
             $drive = new Google_Service_Drive($client);
             $file = $drive->files->get($fileId, ['fields' => 'name']);
             $fileName = ($file->name ?? 'view') . '.pdf';
@@ -206,10 +258,11 @@ class GoogleDriveController extends Controller
     {
         $request->validate(['file_id' => 'required|string']);
         $fileId = $request->input('file_id');
+        $email = $request->user()->email;
 
         try {
-            $client = GoogleTokenService::getAuthorizedClient();
-            $docs = new \Google_Service_Docs($client);
+            $client = GoogleTokenService::getAuthorizedClient($email);
+            $docs = new Google_Service_Docs($client);
             $bodyElements = $docs->documents->get($fileId)->getBody()->getContent();
 
             $text = '';
@@ -233,42 +286,5 @@ class GoogleDriveController extends Controller
         }
     }
 
-    public function uploadFileToDrive(Request $request)
-    {
-        Log::info('MASUK uploadFileToDrive', $request->all());
-
-        $request->validate([
-            'folder_id' => 'required|string',
-            'file' => 'required|file|mimes:pdf|max:5120',
-        ]);
-
-        try {
-            $client = GoogleTokenService::getAuthorizedClient();
-            $service = new Google_Service_Drive($client);
-
-            $file = $request->file('file');
-            $driveFile = new \Google_Service_Drive_DriveFile([
-                'name' => $file->getClientOriginalName(),
-                'parents' => [$request->input('folder_id')],
-            ]);
-
-            $uploaded = $service->files->create($driveFile, [
-                'data' => file_get_contents($file->getPathname()),
-                'mimeType' => $file->getClientMimeType(),
-                'uploadType' => 'multipart',
-            ]);
-
-            Log::info('Upload success:', ['id' => $uploaded->id]);
-
-            return response()->json([
-                'message' => 'File berhasil diupload ke Google Drive.',
-                'file_id' => $uploaded->id,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Upload GAGAL:', ['message' => $e->getMessage()]);
-            return response()->json([
-                'message' => 'Gagal upload file: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
+   
 }

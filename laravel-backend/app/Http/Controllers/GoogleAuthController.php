@@ -40,7 +40,7 @@ class GoogleAuthController extends Controller
         }
 
         $email = $payload['email'];
-        $name = $payload['name'];
+        $name  = $payload['name'];
 
         $user = User::updateOrCreate(
             ['email' => $email],
@@ -63,15 +63,19 @@ class GoogleAuthController extends Controller
             'expires_at'    => now()->addSeconds($tokenData['expires_in'] ?? 3600),
         ]);
 
+        $hasAccess = $this->checkFolderAccess($email);
+
+        $user->role = $hasAccess ? 'admin' : 'user';
+        $user->save();
+
         $token = JWTAuth::fromUser($user);
 
         return response()->json([
-            'token' => $token,
-            'user'  => $user
+            'token'     => $token,
+            'user'      => $user,
+            'is_admin'  => $hasAccess
         ]);
     }
-
-
 
     /**
      * Check if a user has access to the admin Google Drive folder
@@ -99,27 +103,32 @@ class GoogleAuthController extends Controller
         return false;
     }
 
-    /**
-     * Share admin folder with a user
-     */
-    private function shareFolderToUser(string $email, string $role = 'reader'): void
+    public function getTokens(Request $request)
     {
+        $request->validate([
+            'email' => 'required|email',
+            'code'  => 'required|string',
+        ]);
+
+        $email = strtolower($request->input('email'));
+        $serverAuthCode = $request->input('code');
+
         try {
-            $client = GoogleTokenService::getAuthorizedClient($this->adminEmail);
-            $drive = new Google_Service_Drive($client);
-            $folderId = env('GOOGLE_DRIVE_FOLDER_ID');
+            $tokens = GoogleTokenService::exchangeAuthCodeAndStore($email, $serverAuthCode);
 
-            $permission = new Google_Service_Drive_Permission([
-                'type' => 'user',
-                'role' => $role,
-                'emailAddress' => $email,
+            return response()->json([
+                'success' => true,
+                'message' => 'Google tokens stored successfully',
+                'tokens'  => $tokens,
             ]);
 
-            $drive->permissions->create($folderId, $permission, [
-                'sendNotificationEmail' => false,
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Failed to share folder: " . $e->getMessage());
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to exchange Google code: ' . $e->getMessage(),
+            ], 500);
         }
     }
+
+    
 }

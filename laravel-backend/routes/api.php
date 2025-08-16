@@ -12,7 +12,8 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/verify-otp', [OtpController::class, 'verifyOtp']);
 Route::post('/auth/google', [GoogleAuthController::class, 'handleSignInWithGoogle'])->middleware('api');
-Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+Route::post('/auth/google/get-token', [GoogleAuthController::class, 'getTokens']);
+Route::get('/auth/google/callback', [OtpController::class, 'handleGoogleCallback']);
 
 // Google Drive Routes
 Route::get('/drive-contents', [GoogleDriveController::class, 'getDriveContents']);
@@ -23,12 +24,11 @@ Route::post('/create-folder', [GoogleDriveController::class, 'createGoogleDriveF
 Route::post('/convert-docs', [GoogleDriveController::class, 'convertGoogleDocsToTxt']);
 Route::post('/upload-docs', [GoogleDriveController::class, 'uploadFileToDrive']);
 
-// Explore Routes
+// Explore Routes       
 Route::get('/explore-contents', [ExploreController::class, 'index']);   
 Route::post('/create-explore', [ExploreController::class, 'store']);
 Route::put('/update-explore/{id}', [ExploreController::class, 'update']);
 Route::delete('/delete-explore/{id}', [ExploreController::class, 'destroy']);
-
 
 // Auth Middleware
 Route::middleware(['auth:api'])->group(function () {
