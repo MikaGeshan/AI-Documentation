@@ -11,7 +11,6 @@ import {
   Easing,
 } from 'react-native';
 import { Icon } from '../Icons/Icon';
-import { useExpandStore } from '../../hooks/ComponentHooks/useExpandStore';
 
 const InputSelect = ({
   visible,
@@ -24,7 +23,7 @@ const InputSelect = ({
   renderItem,
 }) => {
   const [search, setSearch] = useState('');
-  const { expanded, setExpanded, toggleExpanded } = useExpandStore();
+  const [expanded, setExpanded] = useState(false);
 
   const modalScale = useRef(new Animated.Value(0.9)).current;
   const modalOpacity = useRef(new Animated.Value(0)).current;
@@ -32,6 +31,8 @@ const InputSelect = ({
 
   useEffect(() => {
     if (visible) {
+      console.log('InputSelect opened with data:', data);
+
       Animated.parallel([
         Animated.timing(modalOpacity, {
           toValue: 1,
@@ -61,6 +62,12 @@ const InputSelect = ({
       useNativeDriver: false,
     }).start();
   }, [expanded]);
+
+  useEffect(() => {
+    if (visible && data.length > 0) {
+      setExpanded(true);
+    }
+  }, [data, visible]);
 
   const filteredData = useMemo(() => {
     if (!search.trim()) return data;
@@ -117,17 +124,14 @@ const InputSelect = ({
     },
     noItem: {
       fontStyle: 'italic',
-      paddingVertical: 8,
-      paddingHorizontal: 12,
+      padding: 8,
       color: '#777',
     },
     closeButton: {
       position: 'absolute',
       top: 10,
       right: 10,
-      borderRadius: 20,
       padding: 6,
-      zIndex: 1000,
     },
   });
 
@@ -154,12 +158,8 @@ const InputSelect = ({
               }}
               onFocus={() => setExpanded(true)}
             />
-            <TouchableOpacity onPress={toggleExpanded}>
-              <Icon
-                name={expanded ? 'ChevronUp' : 'ChevronDown'}
-                size={20}
-                color="black"
-              />
+            <TouchableOpacity onPress={() => setExpanded(prev => !prev)}>
+              <Icon name={expanded ? 'ChevronUp' : 'ChevronDown'} size={20} />
             </TouchableOpacity>
           </View>
 
@@ -202,7 +202,7 @@ const InputSelect = ({
           </Animated.View>
 
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Icon name="X" size={20} color="black" />
+            <Icon name="X" size={20} />
           </TouchableOpacity>
         </Animated.View>
       </View>

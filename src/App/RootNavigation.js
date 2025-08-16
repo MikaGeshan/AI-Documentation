@@ -1,0 +1,201 @@
+import React, { useEffect, useState } from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import Header from '../components/Headers/Header';
+import { Icon } from '../components/Icons/Icon';
+import ViewDocumentScreen from '../modules/Documents/Components/ViewDocumentScreen';
+import { useNavigation } from '@react-navigation/native';
+import CallerScreen from '../modules/Call/Components/CallerComponent';
+import ReceiverScreen from '../modules/Call/Components/ReceiverComponent';
+import ExploreScreen from '../modules/Explore/Components/ExploreScreen';
+import CreateExploreScreen from '../modules/Explore/Components/CreateExploreScreen';
+import ViewExploreScreen from '../modules/Explore/Components/ViewExploreScreen';
+import EditExploreScreen from '../modules/Explore/Components/EditExploreScreen';
+import ViewExploreListScreen from '../modules/Explore/Components/ViewExploreListScreen';
+import SignInContainer from '../modules/Authentication/Containers/SignInContainer';
+import RegisterContainer from '../modules/Authentication/Containers/RegisterContainer';
+import VerifyOTPContainer from '../modules/Authentication/Containers/VerifyOTPContainer';
+import ChatContainer from '../modules/Chatbot/Containers/ChatContainer';
+import DocumentsContainer from '../modules/Documents/Containers/DocumentsContainer';
+import WelcomeScreen from '../modules/Main/WelcomeScreen';
+import SignInActions from '../modules/Authentication/Stores/SignInActions';
+
+const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+const DocumentsTabIcon = ({ color, size }) => (
+  <Icon name="FileText" color={color} size={size} />
+);
+
+const ChatTabIcon = ({ color, size }) => (
+  <Icon name="MessageCircle" color={color} size={size} />
+);
+
+const ExploreTabIcon = ({ color, size }) => (
+  <Icon name="Compass" color={color} size={size} />
+);
+
+const BottomTabNavigation = () => {
+  const { isAdmin } = SignInActions.getState();
+  const logout = SignInActions(state => state.logout);
+  const navigation = useNavigation();
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: '#4aa8ea',
+        tabBarInactiveTintColor: '#999',
+      }}
+    >
+      <Tab.Screen
+        name="Documents"
+        component={DocumentsContainer}
+        options={{
+          header: () => (
+            <Header
+              title="Mobile Documentation Explorer"
+              description="Browse and search through our documentations"
+              onSettingsPress={() => {
+                if (isAdmin) {
+                  console.log(isAdmin);
+                  navigation.navigate('Receiver');
+                } else {
+                  navigation.navigate('Caller');
+                }
+              }}
+              onLogoutPress={logout}
+            />
+          ),
+          tabBarIcon: DocumentsTabIcon,
+        }}
+      />
+      <Tab.Screen
+        name="Chat"
+        component={ChatContainer}
+        options={{
+          header: () => (
+            <Header
+              title="Mobile Documentation Chatbot"
+              description="Powered by DeepSeek"
+              onSettingsPress={() => {
+                if (isAdmin) {
+                  navigation.navigate('Receiver');
+                } else {
+                  navigation.navigate('Caller');
+                }
+              }}
+              onLogoutPress={logout}
+            />
+          ),
+          tabBarIcon: ChatTabIcon,
+        }}
+      />
+      <Tab.Screen
+        name="Explore"
+        component={ExploreScreen}
+        options={{
+          header: () => (
+            <Header
+              title="Mobile Documentation Explorer"
+              description="Feel Free to Explore the Available Documentation"
+              onSettingsPress={() => {
+                if (isAdmin) {
+                  navigation.navigate('Receiver');
+                } else {
+                  navigation.navigate('Caller');
+                }
+              }}
+              onLogoutPress={logout}
+            />
+          ),
+          tabBarIcon: ExploreTabIcon,
+        }}
+      />
+    </Tab.Navigator>
+  );
+};
+
+export const RootNavigation = () => {
+  const [isFirstLaunch, setIsFirstLaunch] = useState(null);
+  const { isAuthenticated, hydrateFromStorage, hydrated } = SignInActions();
+
+  useEffect(() => {
+    const init = async () => {
+      const hasLaunched = await AsyncStorage.getItem('hasLaunched');
+      if (hasLaunched === null) {
+        await AsyncStorage.setItem('hasLaunched', 'true');
+        setIsFirstLaunch(true);
+      } else {
+        setIsFirstLaunch(false);
+      }
+
+      await hydrateFromStorage();
+    };
+
+    init();
+  }, [hydrateFromStorage]);
+
+  if (isFirstLaunch === null || !hydrated) return null;
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {isFirstLaunch && !isAuthenticated && (
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+      )}
+
+      {!isAuthenticated && (
+        <>
+          <Stack.Screen name="Login" component={SignInContainer} />
+          <Stack.Screen name="Register" component={RegisterContainer} />
+          <Stack.Screen name="Verify" component={VerifyOTPContainer} />
+        </>
+      )}
+
+      {isAuthenticated && (
+        <>
+          <Stack.Screen
+            name="ScreenBottomTabs"
+            component={BottomTabNavigation}
+          />
+          <Stack.Screen
+            name="ViewExplore"
+            component={ViewExploreScreen}
+            options={{ headerShown: true }}
+          />
+          <Stack.Screen
+            name="ViewExploreList"
+            component={ViewExploreListScreen}
+            options={{ headerShown: true }}
+          />
+          <Stack.Screen
+            name="CreateExplore"
+            component={CreateExploreScreen}
+            options={{ headerShown: true, headerTitle: 'Create New Explore' }}
+          />
+          <Stack.Screen
+            name="EditExplore"
+            component={EditExploreScreen}
+            options={{ headerShown: true, headerTitle: 'Edit Explore' }}
+          />
+          <Stack.Screen
+            name="ViewDocument"
+            component={ViewDocumentScreen}
+            options={{ headerShown: true }}
+          />
+          <Stack.Screen
+            name="Caller"
+            component={CallerScreen}
+            options={{ headerShown: true }}
+          />
+          <Stack.Screen
+            name="Receiver"
+            component={ReceiverScreen}
+            options={{ headerShown: true }}
+          />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+};

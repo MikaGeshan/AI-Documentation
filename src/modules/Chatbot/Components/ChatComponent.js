@@ -1,0 +1,88 @@
+import {
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import React from 'react';
+import InputBox from '../../../components/Inputs/InputBox';
+import BubbleChat from '../../../components/Cards/BubbleChat';
+
+const ChatComponent = ({ messages, loadingMessage, onSendMessage }) => {
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: '#EFEDEC',
+    },
+    scrollView: {
+      flex: 1,
+      padding: 4,
+    },
+    scrollContent: {
+      paddingBottom: 20,
+    },
+    inputBoxWrapper: {
+      paddingHorizontal: 10,
+      paddingVertical: 10,
+      backgroundColor: '#EFEDEC',
+    },
+    infoContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 10,
+    },
+    infoText: {
+      textAlign: 'center',
+      fontSize: 12,
+      color: '#B3B5B2',
+    },
+  });
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
+      >
+        <View style={styles.container}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {messages.map(msg => (
+              <BubbleChat
+                key={msg.id}
+                message={msg.text}
+                isUserChat={msg.sender === 'user'}
+              />
+            ))}
+
+            {loadingMessage && (
+              <BubbleChat
+                key="loading"
+                message={loadingMessage}
+                isUserChat={false}
+              />
+            )}
+          </ScrollView>
+          <View style={styles.inputBoxWrapper}>
+            <InputBox onSend={onSendMessage} />
+          </View>
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoText}>
+              AI can make mistakes. Always verify the official documentation.
+            </Text>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+};
+
+export default ChatComponent;

@@ -51,6 +51,8 @@ const SuccessDialog = ({ message, visible, onHide }) => {
       justifyContent: 'center',
       alignItems: 'center',
       zIndex: 999,
+      elevation: 999,
+      position: 'absolute',
     },
     dialog: {
       backgroundColor: '#FFF',
