@@ -52,7 +52,7 @@ const InputSelect = ({
       modalOpacity.setValue(0);
       modalScale.setValue(0.9);
     }
-  }, [visible]);
+  }, [data, modalOpacity, modalScale, visible]);
 
   useEffect(() => {
     Animated.timing(dropdownHeight, {
@@ -61,7 +61,7 @@ const InputSelect = ({
       easing: Easing.ease,
       useNativeDriver: false,
     }).start();
-  }, [expanded]);
+  }, [dropdownHeight, expanded]);
 
   useEffect(() => {
     if (visible && data.length > 0) {

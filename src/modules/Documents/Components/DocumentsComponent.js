@@ -8,12 +8,9 @@ import {
   KeyboardAvoidingView,
   TouchableOpacity,
   RefreshControl,
-  View,
 } from 'react-native';
 import { Icon } from '../../../components/Icons/Icon';
 import Accordion from '../../../components/Selects/Accordion';
-import SuccessDialog from '../../../components/Alerts/SuccessDialog';
-import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 import Option from '../../../components/Options/Option';
 import Config from '../../../configs/config';
 import FloatingActionButton from '../../../components/Buttons/FloatingActionButton';
@@ -99,16 +96,6 @@ const DocumentsComponent = ({
     container: {
       flex: 1,
     },
-    dialogContainer: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 999,
-    },
     scroll: {
       padding: 16,
     },
@@ -133,29 +120,10 @@ const DocumentsComponent = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      {showSuccess && (
-        <View style={styles.dialogContainer}>
-          <SuccessDialog
-            message={successMessage}
-            onHide={() => setShowSuccess(false)}
-          />
-        </View>
-      )}
-
-      {showError && (
-        <ErrorDialog
-          visible={showError}
-          message={errorMessage}
-          onHide={() => setShowError(false)}
-        />
-      )}
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.container}
       >
-        {/* {renderProgress()} */}
-
         {!loading && (
           <ScrollView
             contentContainerStyle={styles.scroll}
@@ -245,9 +213,12 @@ const DocumentsComponent = ({
               ? 'Choose a document to delete'
               : 'Choose a folder to upload to'
           }
-          data={folders}
-          filterKey="folderName"
-          renderMode={selectMode === 'upload' ? 'folders' : 'documents'}
+          data={
+            selectMode === 'delete'
+              ? folders?.flatMap(f => f.docs || []) || []
+              : folders || []
+          }
+          filterKey={selectMode === 'delete' ? 'name' : 'folderName'}
           onSelect={item => {
             setShowSelectModal(false);
             if (selectMode === 'delete') {

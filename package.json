@@ -24,6 +24,7 @@
     "lucide-react-native": "^0.525.0",
     "react": "19.1.0",
     "react-native": "0.80.1",
+    "react-native-autocomplete-dropdown": "^5.0.0",
     "react-native-blob-util": "^0.22.2",
     "react-native-file-viewer": "^2.1.5",
     "react-native-fs": "^2.20.0",

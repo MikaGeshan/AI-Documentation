@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { RootNavigation } from './src/App/RootNavigation';
 import { configureGoogleSignIn } from './src/services/googleAuthService';
 import { autoConfigureIP } from './src/configs/networkConfig';
+import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
 
 const App = () => {
   useEffect(() => {
@@ -18,7 +19,9 @@ const App = () => {
 
   return (
     <NavigationContainer>
-      <RootNavigation />
+      <AutocompleteDropdownContextProvider>
+        <RootNavigation />
+      </AutocompleteDropdownContextProvider>
     </NavigationContainer>
   );
 };

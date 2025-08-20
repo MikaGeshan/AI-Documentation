@@ -11,7 +11,7 @@ class ExploreController extends Controller
     /**
      * Display a listing of the resource.
      */
-   public function index()
+    public function index()
     {
         $explore = Explore::all();
 
@@ -21,7 +21,30 @@ class ExploreController extends Controller
         ], 200);
     }
 
-    /**CMa
+    public function getFilter()
+    {
+        $explore = Explore::all();
+        
+        $filters = $explore->pluck('filter') 
+            ->filter() 
+            ->map(function($item) {
+                return array_map('trim', explode(',', $item)); 
+            })
+            ->flatten()
+            ->unique()
+            ->values(); 
+
+        return response()->json([
+            'message' => 'Explore filters retrieved successfully',
+            'filters' => $filters,
+        ], 200);
+    }
+
+
+
+
+
+    /**
      * Show the form for creating a new resource.
      */
     public function create()

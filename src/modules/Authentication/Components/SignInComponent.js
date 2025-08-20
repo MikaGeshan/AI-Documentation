@@ -174,16 +174,16 @@ const SignInComponent = ({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <SuccessDialog
-        message="Welcome back!"
-        visible={showSuccessDialog}
-        onHide={() => setShowSuccessDialog(false)}
-      />
       <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
+        <SuccessDialog
+          message="Welcome back!"
+          visible={showSuccessDialog}
+          onHide={() => setShowSuccessDialog(false)}
+        />
         <ScrollView
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}

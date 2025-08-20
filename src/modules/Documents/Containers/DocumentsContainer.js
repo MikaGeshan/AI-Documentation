@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
@@ -6,10 +6,11 @@ import axios from 'axios';
 import { autoConfigureIP } from '../../../configs/networkConfig';
 import Config from '../../../configs/config';
 import { Platform } from 'react-native';
-import { getFolderContents } from '../../../services/googleDocumentService';
 import DocumentsComponent from '../Components/DocumentsComponent';
 import { DocumentAction } from '../Stores/DocumentAction';
 import SignInActions from '../../Authentication/Stores/SignInActions';
+import SuccessDialog from '../../../components/Alerts/SuccessDialog';
+import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 
 const DocumentsContainer = () => {
   const {
@@ -44,6 +45,8 @@ const DocumentsContainer = () => {
     setShowSuccess,
     setErrorMessage,
     setShowError,
+    refreshing,
+    setRefreshing,
   } = DocumentAction();
 
   const loadFolders = DocumentAction(state => state.loadFolders);
@@ -51,19 +54,71 @@ const DocumentsContainer = () => {
   const user = SignInActions(state => state.user);
   const isAdmin = SignInActions(state => state.isAdmin);
 
-  const [refreshing, setRefreshing] = useState(false);
-
   useEffect(() => {
     const init = async () => {
       const ip = await autoConfigureIP();
       if (!ip) {
-        console.warn('autoConfigureIP failed. Skipping folder load.');
+        console.warn('Auto Configure IP failed. Skipping folder load.');
         return;
       }
       await loadFolders();
     };
     init();
   }, [loadFolders]);
+
+  useEffect(() => {
+    let timer;
+    if (showSuccess) {
+      timer = setTimeout(() => {
+        setShowSuccess(false);
+      }, 2500);
+    }
+    return () => clearTimeout(timer);
+  }, [setShowSuccess, showSuccess]);
+
+  useEffect(() => {
+    let timer;
+    if (showError) {
+      timer = setTimeout(() => {
+        setShowError(false);
+      }, 3000);
+    }
+    return () => clearTimeout(timer);
+  }, [setShowError, showError]);
+
+  const getFolderContents = async () => {
+    try {
+      const url = `${Config.API_URL}/api/drive-contents`;
+      console.log('Fetching folder contents from:', url);
+
+      const response = await axios.get(url);
+      const data = response.data;
+
+      const mapped = {
+        subfolders: data.subfolders.map(sub => ({
+          id: sub.id,
+          name: sub.name,
+          webViewLink: sub.webViewLink,
+          files: sub.files.map(file => ({
+            ...file,
+            downloadUrl:
+              file.mimeType === 'application/vnd.google-apps.document'
+                ? file.webViewLink
+                : `https://drive.google.com/uc?id=${file.id}&export=download`,
+          })),
+        })),
+      };
+
+      console.log(mapped);
+      return mapped;
+    } catch (error) {
+      console.error(
+        'Failed to fetch drive contents',
+        error?.response?.data || error.message,
+      );
+      return null;
+    }
+  };
 
   const formatDocName = name => {
     if (!name) return '(Untitled)';
@@ -77,6 +132,36 @@ const DocumentsContainer = () => {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
+
+  // const convertDocument = async fileId => {
+  //   try {
+  //     if (!fileId) throw new Error('Missing file ID');
+
+  //     const backendUrl = `${Config.API_URL}/api/convert-docs`;
+  //     console.log('Calling backend at:', backendUrl);
+
+  //     const response = await axios.post(backendUrl, { file_id: fileId });
+  //     const data = response.data;
+
+  //     if (data?.error) {
+  //       throw new Error(`Backend error: ${data.error}`);
+  //     }
+
+  //     if (!data?.text) {
+  //       throw new Error('Invalid response from backend');
+  //     }
+
+  //     console.log('Document conversion successful from backend');
+  //     return {
+  //       fileId,
+  //       title: data.title || 'Untitled',
+  //       content: data.text,
+  //     };
+  //   } catch (error) {
+  //     console.error('Document conversion failed:', error.message);
+  //     return null;
+  //   }
+  // };
 
   const createFolder = async name => {
     try {
@@ -111,8 +196,6 @@ const DocumentsContainer = () => {
         name: fileName,
         type: 'application/pdf',
       });
-
-      console.log(formData);
 
       await axios.post(`${Config.API_URL}/api/upload-docs`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -166,7 +249,7 @@ const DocumentsContainer = () => {
           url: 'file://' + localPath,
           type: 'application/pdf',
         });
-        setSuccessMessage('Document Downloaded.');
+        setSuccessMessage('Document Successfully Downloaded.');
         setShowSuccess(true);
       } else {
         throw new Error(`Download failed. Status: ${result.statusCode}`);
@@ -184,10 +267,11 @@ const DocumentsContainer = () => {
         data: { file_id: id, email: user?.email },
         headers: { 'Content-Type': 'application/json' },
       });
-      setSuccessMessage('Document Deleted.');
+      setSuccessMessage('Folder Deleted.');
       setShowSuccess(true);
+      await loadFolders();
     } catch (err) {
-      setErrorMessage('Error Deleting Document');
+      setErrorMessage('Error Deleting Folder');
       setShowError(true);
     } finally {
       setRefreshing(false);
@@ -222,43 +306,60 @@ const DocumentsContainer = () => {
   };
 
   return (
-    <DocumentsComponent
-      folders={folders}
-      selectedDoc={selectedDoc}
-      loading={loading}
-      isDownloading={isDownloading}
-      initialLoadProgress={initialLoadProgress}
-      downloadProgress={downloadProgress}
-      showOption={showOption}
-      expandedFolder={expandedFolder}
-      uploadModalVisible={uploadModalVisible}
-      inputModalVisible={inputModalVisible}
-      showSelectModal={showSelectModal}
-      selectMode={selectMode}
-      successMessage={successMessage}
-      showSuccess={showSuccess}
-      errorMessage={errorMessage}
-      showError={showError}
-      isAdmin={isAdmin}
-      refreshing={refreshing}
-      formatDocName={formatDocName}
-      setExpandedFolder={setExpandedFolder}
-      setSelectedDoc={setSelectedDoc}
-      setShowOption={setShowOption}
-      setInputModalVisible={setInputModalVisible}
-      setSelectMode={setSelectMode}
-      setShowSelectModal={setShowSelectModal}
-      setSelectedFolderId={setSelectedFolderId}
-      setUploadModalVisible={setUploadModalVisible}
-      createFolder={createFolder}
-      uploadToDrive={uploadToDrive}
-      downloadAndShareFile={downloadAndShareFile}
-      documentAction={documentAction}
-      onRefresh={onRefresh}
-      setShowSuccess={setShowSuccess}
-      setShowError={setShowError}
-      selectedFolderId={selectedFolderId}
-    />
+    <>
+      <DocumentsComponent
+        folders={folders}
+        selectedDoc={selectedDoc}
+        loading={loading}
+        isDownloading={isDownloading}
+        initialLoadProgress={initialLoadProgress}
+        downloadProgress={downloadProgress}
+        showOption={showOption}
+        expandedFolder={expandedFolder}
+        uploadModalVisible={uploadModalVisible}
+        inputModalVisible={inputModalVisible}
+        showSelectModal={showSelectModal}
+        selectMode={selectMode}
+        successMessage={successMessage}
+        showSuccess={showSuccess}
+        errorMessage={errorMessage}
+        showError={showError}
+        isAdmin={isAdmin}
+        refreshing={refreshing}
+        formatDocName={formatDocName}
+        setExpandedFolder={setExpandedFolder}
+        setSelectedDoc={setSelectedDoc}
+        setShowOption={setShowOption}
+        setInputModalVisible={setInputModalVisible}
+        setSelectMode={setSelectMode}
+        setShowSelectModal={setShowSelectModal}
+        setSelectedFolderId={setSelectedFolderId}
+        setUploadModalVisible={setUploadModalVisible}
+        createFolder={createFolder}
+        uploadToDrive={uploadToDrive}
+        downloadAndShareFile={downloadAndShareFile}
+        documentAction={documentAction}
+        onRefresh={onRefresh}
+        setShowSuccess={setShowSuccess}
+        setShowError={setShowError}
+        selectedFolderId={selectedFolderId}
+      />
+
+      {showSuccess && (
+        <SuccessDialog
+          message={successMessage}
+          onHide={() => setShowSuccess(false)}
+        />
+      )}
+
+      {showError && (
+        <ErrorDialog
+          visible={showError}
+          message={errorMessage}
+          onHide={() => setShowError(false)}
+        />
+      )}
+    </>
   );
 };
 

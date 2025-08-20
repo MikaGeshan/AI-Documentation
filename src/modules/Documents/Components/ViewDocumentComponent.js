@@ -2,7 +2,7 @@ import { SafeAreaView, StyleSheet } from 'react-native';
 import React from 'react';
 import WebView from 'react-native-webview';
 
-const ViewDocumentScreen = ({ route }) => {
+const ViewDocumentComponent = ({ route }) => {
   const { url, title } = route.params;
 
   const styles = StyleSheet.create({
@@ -29,4 +29,4 @@ const ViewDocumentScreen = ({ route }) => {
   );
 };
 
-export default ViewDocumentScreen;
+export default ViewDocumentComponent;

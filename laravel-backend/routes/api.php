@@ -26,6 +26,7 @@ Route::post('/upload-docs', [GoogleDriveController::class, 'uploadFileToDrive'])
 
 // Explore Routes       
 Route::get('/explore-contents', [ExploreController::class, 'index']);   
+Route::get('/explore-get-filters', [ExploreController::class, 'getFilter']);
 Route::post('/create-explore', [ExploreController::class, 'store']);
 Route::put('/update-explore/{id}', [ExploreController::class, 'update']);
 Route::delete('/delete-explore/{id}', [ExploreController::class, 'destroy']);

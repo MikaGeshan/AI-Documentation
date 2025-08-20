@@ -5,14 +5,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import Header from '../components/Headers/Header';
 import { Icon } from '../components/Icons/Icon';
-import ViewDocumentScreen from '../modules/Documents/Components/ViewDocumentScreen';
 import { useNavigation } from '@react-navigation/native';
 import CallerScreen from '../modules/Call/Components/CallerComponent';
 import ReceiverScreen from '../modules/Call/Components/ReceiverComponent';
-import ExploreScreen from '../modules/Explore/Components/ExploreScreen';
-import CreateExploreScreen from '../modules/Explore/Components/CreateExploreScreen';
 import ViewExploreScreen from '../modules/Explore/Components/ViewExploreScreen';
-import EditExploreScreen from '../modules/Explore/Components/EditExploreScreen';
 import ViewExploreListScreen from '../modules/Explore/Components/ViewExploreListScreen';
 import SignInContainer from '../modules/Authentication/Containers/SignInContainer';
 import RegisterContainer from '../modules/Authentication/Containers/RegisterContainer';
@@ -21,6 +17,10 @@ import ChatContainer from '../modules/Chatbot/Containers/ChatContainer';
 import DocumentsContainer from '../modules/Documents/Containers/DocumentsContainer';
 import WelcomeScreen from '../modules/Main/WelcomeScreen';
 import SignInActions from '../modules/Authentication/Stores/SignInActions';
+import ViewDocumentComponent from '../modules/Documents/Components/ViewDocumentComponent';
+import CreateExploreContainer from '../modules/Explore/Containers/CreateExploreContainer';
+import ExploreContainer from '../modules/Explore/Containers/ExploreContainer';
+import EditExploreContainer from '../modules/Explore/Containers/EditExploreContainer';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -94,7 +94,7 @@ const BottomTabNavigation = () => {
       />
       <Tab.Screen
         name="Explore"
-        component={ExploreScreen}
+        component={ExploreContainer}
         options={{
           header: () => (
             <Header
@@ -171,17 +171,17 @@ export const RootNavigation = () => {
           />
           <Stack.Screen
             name="CreateExplore"
-            component={CreateExploreScreen}
+            component={CreateExploreContainer}
             options={{ headerShown: true, headerTitle: 'Create New Explore' }}
           />
           <Stack.Screen
             name="EditExplore"
-            component={EditExploreScreen}
+            component={EditExploreContainer}
             options={{ headerShown: true, headerTitle: 'Edit Explore' }}
           />
           <Stack.Screen
             name="ViewDocument"
-            component={ViewDocumentScreen}
+            component={ViewDocumentComponent}
             options={{ headerShown: true }}
           />
           <Stack.Screen

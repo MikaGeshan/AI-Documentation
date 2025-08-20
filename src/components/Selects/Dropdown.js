@@ -1,112 +1,176 @@
-/* eslint-disable react/no-unstable-nested-components */
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
-  Platform,
-  Text,
+  TextInput,
+  ScrollView,
   TouchableOpacity,
+  Text,
+  Keyboard,
 } from 'react-native';
-import RNPickerSelect from 'react-native-picker-select';
-import React, { useEffect, useState } from 'react';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 import { Icon } from '../Icons/Icon';
 
-const Dropdown = ({ selectedValue = [], onValueChange }) => {
+const Dropdown = ({ selectedValue = [], onValueChange, items = [] }) => {
+  const [inputText, setInputText] = useState('');
+  const [dropdownVisible, setDropdownVisible] = useState(false);
   const [selectedValues, setSelectedValues] = useState(
     Array.isArray(selectedValue) ? selectedValue : [],
   );
 
-  const items = [
-    { label: 'Mobile', value: 'mobile' },
-    { label: 'Javascript', value: 'javascript' },
-    { label: 'Android', value: 'android' },
-    { label: 'IOS', value: 'ios' },
-  ];
+  const animationHeight = useSharedValue(0);
 
   useEffect(() => {
-    setSelectedValues(Array.isArray(selectedValue) ? selectedValue : []);
-  }, [selectedValue]);
+    const newValues = Array.isArray(selectedValue) ? selectedValue : [];
+    if (JSON.stringify(newValues) !== JSON.stringify(selectedValues)) {
+      setSelectedValues(newValues);
+    }
+  }, [selectedValue, selectedValues]);
 
-  const toggleSelection = value => {
-    if (!value) return;
+  useEffect(() => {
+    animationHeight.value = withTiming(dropdownVisible ? 150 : 0, {
+      duration: 200,
+    });
+  }, [animationHeight, dropdownVisible]);
 
-    const updatedValues = selectedValues.includes(value)
-      ? selectedValues.filter(item => item !== value)
-      : [...selectedValues, value];
+  const filteredItems = items.filter(
+    item =>
+      !selectedValues.includes(item) &&
+      item.toLowerCase().includes(inputText.toLowerCase()),
+  );
 
-    setSelectedValues(updatedValues);
-    onValueChange && onValueChange(updatedValues);
+  const addValue = value => {
+    if (!value || selectedValues.includes(value)) return;
+    const updated = [...selectedValues, value];
+    setSelectedValues(updated);
+    onValueChange && onValueChange(updated);
+    setInputText('');
+    setDropdownVisible(false);
   };
 
+  const removeValue = value => {
+    const updated = selectedValues.filter(v => v !== value);
+    setSelectedValues(updated);
+    onValueChange && onValueChange(updated);
+  };
+
+  const toggleDropdown = () => {
+    setDropdownVisible(prev => !prev);
+  };
+
+  // Handle Enter / Submit
+  const handleSubmitEditing = () => {
+    const trimmedText = inputText.trim();
+    if (trimmedText && !selectedValues.includes(trimmedText)) {
+      addValue(trimmedText);
+      Keyboard.dismiss();
+    }
+  };
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    height: animationHeight.value,
+    opacity: animationHeight.value === 0 ? 0 : 1,
+  }));
+
   const styles = StyleSheet.create({
-    container: {
-      marginHorizontal: 16,
-      marginVertical: 12,
-    },
-    pickerWrapper: {
-      backgroundColor: '#f9f9f9',
+    container: { margin: 16 },
+    inputWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
       borderWidth: 1,
       borderColor: '#ccc',
       borderRadius: 8,
       paddingHorizontal: 12,
       height: 50,
-      justifyContent: 'center',
     },
-    pickerText: {
-      fontSize: 14,
-      color: '#333',
-      paddingVertical: Platform.OS === 'ios' ? 12 : 8,
+    input: { flex: 1 },
+    dropdown: {
+      borderWidth: 1,
+      borderColor: '#ccc',
+      borderRadius: 8,
+      marginTop: 4,
+      overflow: 'hidden',
     },
-    iconContainer: {
-      top: 15,
-      right: 12,
+    item: {
+      padding: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
     },
     chipsContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
       marginTop: 8,
-      gap: 8,
     },
     chip: {
       backgroundColor: '#d1e7dd',
       borderRadius: 16,
       paddingHorizontal: 10,
       paddingVertical: 4,
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginRight: 8,
+      marginBottom: 8,
     },
     chipText: {
       fontSize: 12,
       color: '#0f5132',
+      marginRight: 6,
     },
   });
 
   return (
     <View style={styles.container}>
-      <View style={styles.pickerWrapper}>
-        <RNPickerSelect
-          onValueChange={toggleSelection}
-          placeholder={{ label: 'Select genres...', value: null }}
-          Icon={() => <Icon name="ChevronDown" size={20} color="grey" />}
-          items={items}
-          useNativeAndroidPickerStyle={false}
-          style={{
-            inputIOS: styles.pickerText,
-            inputAndroid: styles.pickerText,
-            iconContainer: styles.iconContainer,
-            placeholder: { color: '#999' },
+      <View style={styles.inputWrapper}>
+        <TextInput
+          style={styles.input}
+          placeholder="Type or select..."
+          value={inputText}
+          onChangeText={text => {
+            setInputText(text);
+            setDropdownVisible(true);
           }}
+          onFocus={() => setDropdownVisible(true)}
+          onSubmitEditing={handleSubmitEditing} // <- handle Enter key
+          returnKeyType="done"
         />
+        <TouchableOpacity onPress={toggleDropdown}>
+          <Icon
+            name={dropdownVisible ? 'ChevronUp' : 'ChevronDown'}
+            size={20}
+            color="#333"
+          />
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.chipsContainer}>
-        {Array.isArray(selectedValues) &&
-          selectedValues.map(value => (
+      <Animated.View style={[styles.dropdown, animatedStyle]}>
+        <ScrollView keyboardShouldPersistTaps="handled">
+          {filteredItems.map(item => (
             <TouchableOpacity
-              key={value}
-              style={styles.chip}
-              onPress={() => toggleSelection(value)}
+              key={item}
+              onPress={() => addValue(item)}
+              style={styles.item}
             >
-              <Text style={styles.chipText}>{value}</Text>
+              <Text>{item}</Text>
             </TouchableOpacity>
           ))}
+        </ScrollView>
+      </Animated.View>
+
+      <View style={styles.chipsContainer}>
+        {selectedValues.map(value => (
+          <TouchableOpacity
+            key={value}
+            style={styles.chip}
+            onPress={() => removeValue(value)}
+          >
+            <Text style={styles.chipText}>{value}</Text>
+            <Icon name="X" size={14} color="#0f5132" />
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
