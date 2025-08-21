@@ -1,62 +1,105 @@
 import { useEffect, useRef, useState } from 'react';
-import { getSocket } from '../../../App/Network';
-
+import { getSocket, initializeSocket } from '../../../App/Network';
 import { useNavigation } from '@react-navigation/native';
 import { RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
-import { createPeerConnection, getLocalStream } from '../../../configs/webrtc';
+import { createPeerConnection, getLocalStream } from '../../../App/WebRTC';
 import SignInActions from '../../Authentication/Stores/SignInActions';
+import CallerComponent from '../Components/CallerComponent';
+import { CallerAction } from '../Stores/CallerAction';
 
 export default function CallerContainer() {
-  const [localStream, setLocalStream] = useState(null);
-  const [remoteStream, setRemoteStream] = useState(null);
-  const [callStarted, setCallStarted] = useState(false);
-  const [muteMic, setMuteMic] = useState(true);
+  const {
+    localStream,
+    remoteStream,
+    callStarted,
+    muteMic,
+    setLocalStream,
+    setRemoteStream,
+    setCallStarted,
+    setMuteMic,
+  } = CallerAction();
 
+  const [socketReady, setSocketReady] = useState(false);
   const pcRef = useRef(null);
   const targetUserIdRef = useRef(null);
 
-  const socket = getSocket();
   const { user } = SignInActions();
   const navigation = useNavigation();
 
   useEffect(() => {
-    socket.emit('register', { id: user.id, role: user.role });
-    console.log('User or Caller Registered:', user);
+    let socket;
+    const setupSocket = async () => {
+      console.log('[Socket] Initializing...');
+      socket = await initializeSocket();
 
-    socket.on('signal', async ({ data, fromUserId }) => {
-      if (data.type === 'answer') {
-        await pcRef.current.setRemoteDescription(
-          new RTCSessionDescription(data),
-        );
-        targetUserIdRef.current = fromUserId;
-      } else if (data.candidate) {
-        await pcRef.current.addIceCandidate(
-          new RTCIceCandidate(data.candidate),
-        );
-      } else if (data.type === 'call-ended') {
-        console.log('Call ended by remote peer');
-        endCall(false);
+      if (!socket) {
+        console.error('[Socket] Failed to initialize');
+        return;
       }
-    });
+
+      console.log('[Socket] Initialized:', socket.id);
+      setSocketReady(true);
+
+      if (user?.role === 'user' || user?.role === 'admin') {
+        console.log(`[Socket] Registering ${user.role} with ID:`, user.id);
+        socket.emit('register', { id: user.id, role: user.role });
+
+        socket.on('signal', async ({ data, fromUserId }) => {
+          console.log('[Socket] Signal received:', data, 'from', fromUserId);
+
+          if (data.type === 'answer') {
+            console.log('[Socket] Setting remote description (answer)');
+            await pcRef.current.setRemoteDescription(
+              new RTCSessionDescription(data),
+            );
+            targetUserIdRef.current = fromUserId;
+          } else if (data.candidate) {
+            console.log('[Socket] Adding ICE candidate');
+            await pcRef.current.addIceCandidate(
+              new RTCIceCandidate(data.candidate),
+            );
+          } else if (data.type === 'call-ended') {
+            console.log('[Socket] Call ended signal received');
+            endCall(false);
+          }
+        });
+      }
+    };
+
+    setupSocket();
 
     return () => {
-      socket.off('signal');
+      if (socket) {
+        console.log('[Socket] Cleaning up socket listeners');
+        socket.off('signal');
+      }
       pcRef.current?.close();
     };
-  }, []);
+  }, [user]);
 
   const startCall = async () => {
+    const socket = getSocket();
+    if (!socket) {
+      console.warn('[Socket] Not ready yet');
+      return;
+    }
+
+    console.log('[Call] Starting call...');
     const stream = await getLocalStream();
     setLocalStream(stream);
-    console.log('Local Stream', stream.id);
+    console.log('[Call] Local Stream ID:', stream.id);
 
     const pc = createPeerConnection(setRemoteStream);
     pcRef.current = pc;
 
-    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+    stream.getTracks().forEach(track => {
+      pc.addTrack(track, stream);
+      console.log('[Call] Track added:', track.kind);
+    });
 
     pc.onicecandidate = event => {
       if (event.candidate) {
+        console.log('[Call] Sending ICE candidate:', event.candidate);
         socket.emit('signal', {
           data: { candidate: event.candidate },
           targetUserId: targetUserIdRef.current,
@@ -66,8 +109,10 @@ export default function CallerContainer() {
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
+    console.log('[Call] Local description set (offer):', offer);
 
     socket.emit('signal', { data: offer });
+    console.log('[Call] Offer sent via socket');
     setCallStarted(true);
   };
 
@@ -78,17 +123,23 @@ export default function CallerContainer() {
         const newState = !audioTrack.enabled;
         audioTrack.enabled = newState;
         setMuteMic(newState);
-        console.log(`Microphone ${newState ? 'unmuted' : 'muted'}`);
+        console.log(`[Call] Microphone ${newState ? 'unmuted' : 'muted'}`);
       }
     }
   };
 
   const endCall = (sendSignal = true) => {
-    console.log('Send signal to remote peer?', sendSignal);
-    console.log('Current target user ID:', targetUserIdRef.current);
+    const socket = getSocket();
+    if (!socket) {
+      console.warn('[Call] Cannot end call, socket not ready');
+      return;
+    }
+
+    console.log('[Call] Ending call, sendSignal:', sendSignal);
 
     try {
       if (sendSignal && targetUserIdRef.current) {
+        console.log('[Call] Sending call-ended signal');
         socket.emit('signal', {
           data: { type: 'call-ended' },
           targetUserId: targetUserIdRef.current,
@@ -101,27 +152,37 @@ export default function CallerContainer() {
       if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         setLocalStream(null);
+        console.log('[Call] Local stream stopped');
       }
 
       if (remoteStream) {
         remoteStream.getTracks().forEach(track => track.stop());
         setRemoteStream(null);
+        console.log('[Call] Remote stream stopped');
       }
 
       setCallStarted(false);
+      console.log('[Call] Call state reset');
       navigation.replace('ScreenBottomTabs');
     } catch (error) {
-      console.error('Error in endCall:', error);
+      console.error('[Call] Error in endCall:', error);
     }
   };
 
-  return {
-    localStream,
-    remoteStream,
-    callStarted,
-    muteMic,
-    startCall,
-    endCall,
-    mute,
-  };
+  if (!socketReady) {
+    console.log('[Socket] Waiting for socket to be ready...');
+    return null;
+  }
+
+  return (
+    <CallerComponent
+      localStream={localStream}
+      remoteStream={remoteStream}
+      callStarted={callStarted}
+      muteMic={muteMic}
+      startCall={startCall}
+      endCall={endCall}
+      mute={mute}
+    />
+  );
 }

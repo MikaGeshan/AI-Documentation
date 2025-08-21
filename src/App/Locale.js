@@ -1,4 +1,4 @@
-import { GetAppListQuery, isAppListQuery } from '../utils/appListQuery';
+import { getFolderContents } from './Google';
 
 const GREETING_KEYWORDS = [
   'halo',
@@ -31,13 +31,59 @@ export const getInitialGreeting = () => {
   return DEFAULT_GREETINGS[random];
 };
 
+export const isAppListQuery = userMessage => {
+  const lower = userMessage.toLowerCase().trim();
+  const matchPatterns = [
+    /^apa saja aplikasi/i,
+    /^sebutkan aplikasi/i,
+    /^list aplikasi/i,
+    /^daftar aplikasi/i,
+    /^dokumen yang tersedia/i,
+    /^dokumen apa saja/i,
+    /^aplikasi apa saja yang tersedia/i,
+    /^tolong tampilkan daftar aplikasi/i,
+  ];
+
+  return matchPatterns.some(pattern => pattern.test(lower));
+};
+
+export const getAppList = async userMessage => {
+  const allDocuments = await getFolderContents();
+  const folderNames = [...new Set(allDocuments.map(doc => doc.folder))];
+  const lowerMsg = userMessage.toLowerCase();
+
+  const folderGuess = folderNames.find(folder =>
+    lowerMsg.includes(folder.toLowerCase()),
+  );
+
+  if (folderGuess) {
+    const documents = allDocuments.filter(doc => doc.folder === folderGuess);
+    const fileNames = documents.map(doc => doc.name).filter(Boolean);
+
+    if (fileNames.length === 0) {
+      return `No documents found in the folder *${folderGuess}*.`;
+    }
+
+    return `Documents list in folder *${folderGuess}*:\n\n- ${fileNames.join(
+      '\n- ',
+    )}`;
+  }
+
+  if (folderNames.length === 0) {
+    return 'No documentation about the application.';
+  }
+
+  return `List of documented applications:\n\n- ${folderNames.join('\n- ')}`;
+};
+
 export const greetingsAndListApp = async message => {
   const greetingDetected = isGreeting(message);
   const appListDetected = isAppListQuery(message);
+
   console.log('[INFO] Locale triggered by:', message);
 
   if (greetingDetected && appListDetected) {
-    const list = await GetAppListQuery(message);
+    const list = await getAppList(message);
     return `Halo! Berikut adalah daftar aplikasi yang kamu tanyakan:\n\n${list}`;
   }
 
@@ -46,7 +92,7 @@ export const greetingsAndListApp = async message => {
   }
 
   if (appListDetected) {
-    return await GetAppListQuery(message);
+    return await getAppList(message);
   }
 
   return null;

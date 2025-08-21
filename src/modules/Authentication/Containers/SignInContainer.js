@@ -3,9 +3,9 @@ import { Alert } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import SignInComponent from '../Components/SignInComponent';
-import Config from '../../../configs/config';
-import { signInWithGoogle } from '../../../services/googleAuthService';
 import SignInActions from '../Stores/SignInActions';
+import { signInWithGoogle } from '../../../App/Google';
+import Config from '../../../App/Network';
 
 const SignInContainer = () => {
   const navigation = useNavigation();

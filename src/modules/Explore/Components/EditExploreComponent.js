@@ -13,7 +13,7 @@ import InputText from '../../../components/Inputs/InputText';
 import Dropdown from '../../../components/Selects/Dropdown';
 import Button from '../../../components/Buttons/Button';
 import SuccessDialog from '../../../components/Alerts/SuccessDialog';
-import Config from '../../../configs/config';
+import Config from '../../../App/Network';
 
 const EditExploreComponent = ({
   formData,
@@ -100,12 +100,12 @@ const EditExploreComponent = ({
             <Text style={styles.text}>Description</Text>
             <View style={errors.description && styles.errorBorder}>
               <InputText
-                placeholder="Add a Description Max 100 Characters"
+                placeholder="Add a Description Max 200 Characters"
                 value={formData.description}
                 onChangeText={text => setFormData('description', text)}
                 error={errors.description}
                 multiline={true}
-                maxLength={100}
+                maxLength={225}
               />
             </View>
             {errors.description && (

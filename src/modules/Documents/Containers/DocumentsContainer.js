@@ -3,14 +3,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import axios from 'axios';
-import { autoConfigureIP } from '../../../configs/networkConfig';
-import Config from '../../../configs/config';
 import { Platform } from 'react-native';
 import DocumentsComponent from '../Components/DocumentsComponent';
 import { DocumentAction } from '../Stores/DocumentAction';
 import SignInActions from '../../Authentication/Stores/SignInActions';
 import SuccessDialog from '../../../components/Alerts/SuccessDialog';
 import ErrorDialog from '../../../components/Alerts/ErrorDialog';
+import Config, { autoConfigureIP } from '../../../App/Network';
 
 const DocumentsContainer = () => {
   const {

@@ -12,11 +12,11 @@ import {
 import { Icon } from '../../../components/Icons/Icon';
 import Accordion from '../../../components/Selects/Accordion';
 import Option from '../../../components/Options/Option';
-import Config from '../../../configs/config';
 import FloatingActionButton from '../../../components/Buttons/FloatingActionButton';
 import InputModal from '../../../components/Inputs/InputModal';
 import InputSelect from '../../../components/Inputs/InputSelect';
 import UploadDirectoryModal from '../../../components/Uploads/UploadDirectoryModal';
+import Config from '../../../App/Network';
 
 const DocumentsComponent = ({
   folders,

@@ -59,7 +59,7 @@ class ExploreController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'description' => 'required|string|max:100',
+            'description' => 'required|string|max:200',
             'web_link' => 'required|string',
             'filter' => 'nullable|string',
             'image' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',

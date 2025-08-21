@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unstable-nested-components */
 import React, { useEffect, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -8,8 +9,7 @@ import { Icon } from '../components/Icons/Icon';
 import { useNavigation } from '@react-navigation/native';
 import CallerScreen from '../modules/Call/Components/CallerComponent';
 import ReceiverScreen from '../modules/Call/Components/ReceiverComponent';
-import ViewExploreScreen from '../modules/Explore/Components/ViewExploreScreen';
-import ViewExploreListScreen from '../modules/Explore/Components/ViewExploreListScreen';
+import ViewExploreComponent from '../modules/Explore/Components/ViewExploreComponent';
 import SignInContainer from '../modules/Authentication/Containers/SignInContainer';
 import RegisterContainer from '../modules/Authentication/Containers/RegisterContainer';
 import VerifyOTPContainer from '../modules/Authentication/Containers/VerifyOTPContainer';
@@ -21,6 +21,7 @@ import ViewDocumentComponent from '../modules/Documents/Components/ViewDocumentC
 import CreateExploreContainer from '../modules/Explore/Containers/CreateExploreContainer';
 import ExploreContainer from '../modules/Explore/Containers/ExploreContainer';
 import EditExploreContainer from '../modules/Explore/Containers/EditExploreContainer';
+import ViewExploreListContainer from '../modules/Explore/Containers/ViewExploreListContainer';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -161,12 +162,15 @@ export const RootNavigation = () => {
           />
           <Stack.Screen
             name="ViewExplore"
-            component={ViewExploreScreen}
-            options={{ headerShown: true }}
+            component={ViewExploreComponent}
+            options={({ route }) => ({
+              headerShown: true,
+              title: route.params?.title || 'Viewing Explore',
+            })}
           />
           <Stack.Screen
             name="ViewExploreList"
-            component={ViewExploreListScreen}
+            component={ViewExploreListContainer}
             options={{ headerShown: true }}
           />
           <Stack.Screen

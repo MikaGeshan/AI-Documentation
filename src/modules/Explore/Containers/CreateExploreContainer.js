@@ -4,9 +4,9 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import axios from 'axios';
 import { launchImageLibrary } from 'react-native-image-picker';
 
-import Config from '../../../configs/config';
 import CreateExploreComponent from '../Components/CreateExploreComponent';
 import { CreateExploreAction } from '../Stores/CreateExploreAction';
+import Config from '../../../App/Network';
 
 const CreateExploreContainer = () => {
   const navigation = useNavigation();

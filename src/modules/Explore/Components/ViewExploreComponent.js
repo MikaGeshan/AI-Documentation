@@ -10,7 +10,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { useRoute } from '@react-navigation/native';
 
-const ViewExploreScreen = () => {
+const ViewExploreComponent = () => {
   const route = useRoute();
   const { web_link } = route.params || {};
 
@@ -57,4 +57,4 @@ const ViewExploreScreen = () => {
   );
 };
 
-export default ViewExploreScreen;
+export default ViewExploreComponent;

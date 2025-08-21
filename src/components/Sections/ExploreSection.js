@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, View, Text } from 'react-native';
 import Hyperlink from '../../components/Buttons/Hyperlink';
 import CardExplore from '../Cards/CardExplore';
-import Config from '../../configs/config';
+import Config from '../../App/Network';
 
 const ExploreSection = ({
   title,
@@ -67,6 +67,7 @@ const ExploreSection = ({
                 onPress={() =>
                   navigation.navigate('ViewExplore', {
                     id: item.id,
+                    title: item.title,
                     web_link: item.web_link,
                   })
                 }

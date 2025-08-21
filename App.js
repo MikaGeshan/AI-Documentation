@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { RootNavigation } from './src/App/RootNavigation';
-import { configureGoogleSignIn } from './src/services/googleAuthService';
-import { autoConfigureIP } from './src/configs/networkConfig';
 import { AutocompleteDropdownContextProvider } from 'react-native-autocomplete-dropdown';
+import { configureGoogleSignIn } from './src/App/Google';
+import { autoConfigureIP } from './src/App/Network';
 
 const App = () => {
   useEffect(() => {

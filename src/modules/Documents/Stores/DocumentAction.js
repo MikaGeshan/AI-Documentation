@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getFolderContents } from '../../../services/googleDocumentService';
+import { getFolderContents } from '../../../App/Google';
 
 export const DocumentAction = create(set => ({
   folders: [],
@@ -19,7 +19,7 @@ export const DocumentAction = create(set => ({
   setInitialLoadProgress: progress => set({ initialLoadProgress: progress }),
   setDownloadProgress: progress => set({ downloadProgress: progress }),
   setIsDownloading: isDownloading => set({ isDownloading }),
-  setRefreshing: refreshing => set({ refreshing }), // 👈 setter baru
+  setRefreshing: refreshing => set({ refreshing }),
 
   loadFolders: async () => {
     set({ loading: true, initialLoadProgress: 0 });

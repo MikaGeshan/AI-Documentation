@@ -1,32 +1,21 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import Config from '../../../configs/config';
-import axios from 'axios';
-import { useEditingStore } from '../../../hooks/ComponentHooks/useEditingStore';
-import { useDeletingStore } from '../../../hooks/ComponentHooks/useDeletingStore';
-import { useRefreshStore } from '../../../hooks/ComponentHooks/useRefreshStore';
+import { ExploreAction } from '../Stores/ExploreAction';
 import SignInActions from '../../Authentication/Stores/SignInActions';
 import ExploreComponent from '../Components/ExploreComponent';
 
 const ExploreContainer = () => {
   const navigation = useNavigation();
   const isAdmin = SignInActions(state => state.isAdmin);
-  const { setIsEditing } = useEditingStore();
-  const { setIsDeleting } = useDeletingStore();
-  const { isRefreshing, setIsRefreshing } = useRefreshStore();
 
-  const [exploreData, setExploreData] = useState([]);
-
-  const getContent = async () => {
-    try {
-      const response = await axios.get(
-        `${Config.API_URL}/api/explore-contents`,
-      );
-      setExploreData(response.data.data);
-    } catch (error) {
-      console.error('Failed to fetch explore content:', error);
-    }
-  };
+  const {
+    exploreData,
+    getContent,
+    setIsEditing,
+    setIsDeleting,
+    isRefreshing,
+    setIsRefreshing,
+  } = ExploreAction();
 
   const handleNavigation = (
     filter = 'all',
@@ -39,11 +28,11 @@ const ExploreContainer = () => {
     setIsRefreshing(true);
     await getContent();
     setIsRefreshing(false);
-  }, [setIsRefreshing]);
+  }, [setIsRefreshing, getContent]);
 
   useEffect(() => {
     getContent();
-  }, []);
+  }, [getContent]);
 
   const fabActions = [
     {

@@ -1,10 +1,10 @@
 import React, { useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
-import Config from '../../../configs/config';
 import axios from 'axios';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { EditExploreAction } from '../Stores/EditExploreAction';
 import EditExploreComponent from '../Components/EditExploreComponent';
+import Config from '../../../App/Network';
 
 const EditExploreContainer = ({ route, navigation }) => {
   const { onRefresh, exploreItem } = route.params || {};

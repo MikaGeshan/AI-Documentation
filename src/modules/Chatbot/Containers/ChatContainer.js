@@ -4,11 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import ChatComponent from '../Components/ChatComponent';
 import { ChatAction } from '../Stores/ChatAction';
-import SignInActions from '../../Authentication/Stores/SignInActions';
 
-import { getFolderContents } from '../../../services/googleDocumentService';
-
-import Config from '../../../configs/config';
 import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL } from '@env';
 import {
   cutText,
@@ -16,6 +12,9 @@ import {
   getInitialGreeting,
   greetingsAndListApp,
 } from '../../../App/Locale';
+import SignInActions from '../../Authentication/Stores/SignInActions';
+import { getFolderContents } from '../../../App/Google';
+import Config from '../../../App/Network';
 
 const MAX_DOCS = 4;
 const CACHE_PREFIX = 'doc-cache-';
@@ -54,6 +53,53 @@ const preloadAllDocuments = async () => {
   } catch (err) {
     console.error('Failed to preload documents:', err);
   }
+};
+
+// Inside ChatContainer
+
+const isAppListQuery = userMessage => {
+  const lower = userMessage.toLowerCase().trim();
+  const matchPatterns = [
+    /^apa saja aplikasi/i,
+    /^sebutkan aplikasi/i,
+    /^list aplikasi/i,
+    /^daftar aplikasi/i,
+    /^dokumen yang tersedia/i,
+    /^dokumen apa saja/i,
+    /^aplikasi apa saja yang tersedia/i,
+    /^tolong tampilkan daftar aplikasi/i,
+  ];
+
+  return matchPatterns.some(pattern => pattern.test(lower));
+};
+
+const getAppListResponse = async userMessage => {
+  const allDocuments = await getFolderContents(); // reuse your existing service
+  const folderNames = [...new Set(allDocuments.map(doc => doc.folder))];
+
+  const lowerMsg = userMessage.toLowerCase();
+  const folderGuess = folderNames.find(folder =>
+    lowerMsg.includes(folder.toLowerCase()),
+  );
+
+  if (folderGuess) {
+    const documents = allDocuments.filter(doc => doc.folder === folderGuess);
+    const fileNames = documents.map(doc => doc.name).filter(Boolean);
+
+    if (fileNames.length === 0) {
+      return `No Documents found in folder *${folderGuess}*.`;
+    }
+
+    return `Documents list in folder *${folderGuess}*:\n\n- ${fileNames.join(
+      '\n- ',
+    )}`;
+  }
+
+  if (folderNames.length === 0) {
+    return 'No Documentation about the application.';
+  }
+
+  return `List of documented applications:\n\n- ${folderNames.join('\n- ')}`;
 };
 
 let controller = null;
@@ -105,7 +151,7 @@ const ChatContainer = () => {
     resetStage,
     loadingMessage,
   } = ChatAction();
-  const user = SignInActions(state => state.user);
+  const { user } = SignInActions();
 
   useEffect(() => {
     setMessages([

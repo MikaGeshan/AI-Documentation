@@ -122,12 +122,12 @@ const CreateExploreComponent = ({
               <InputText
                 autoCapitalize={false}
                 autoCorrect={false}
-                placeholder="Add a Description Max 100 Characters"
+                placeholder="Add a Description Max 200 Characters"
                 value={formData.description}
                 onChangeText={text => setFormData('description', text)}
                 error={errors.description}
                 multiline={true}
-                maxLength={100}
+                maxLength={200}
               />
             </View>
             {errors.description && (

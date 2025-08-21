@@ -9,7 +9,7 @@ import {
 import { WebView } from 'react-native-webview';
 import { GOOGLE_CALLBACK_URL } from '@env';
 import axios from 'axios';
-import Config from '../../configs/config';
+import Config from '../../App/Network';
 
 export default function GoogleConsentWebView({
   visible,

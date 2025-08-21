@@ -2,11 +2,11 @@ import React, { useEffect } from 'react';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Alert, Linking } from 'react-native';
 import axios from 'axios';
-import Config from '../../../configs/config';
 
 import VerifyOTPComponent from '../Components/VerifyOTPComponent';
 import VerifyOTPActions from '../Stores/VerifyOTPActions';
 import SignInActions from '../Stores/SignInActions';
+import Config from '../../../App/Network';
 
 const VerifyOTPContainer = () => {
   const route = useRoute();

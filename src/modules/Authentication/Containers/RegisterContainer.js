@@ -2,9 +2,9 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useEffect } from 'react';
 import { Alert } from 'react-native';
 import axios from 'axios';
-import Config from '../../../configs/config';
 import RegisterComponent from '../Components/RegisterComponent';
 import { RegisterActions } from '../Stores/RegisterActions';
+import Config from '../../../App/Network';
 
 const RegisterContainer = () => {
   const navigation = useNavigation();
