@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use SadiqSalau\LaravelOtp\Facades\Otp;
+use Google\Service\Drive as GoogleServiceDrive;
 use Google\Client as GoogleClient;
 
 class OtpController extends Controller
@@ -84,14 +85,15 @@ class OtpController extends Controller
             $client->setClientId(env('GOOGLE_CLIENT_ID'));
             $client->setClientSecret(env('GOOGLE_CLIENT_SECRET'));
             $client->setRedirectUri(env('GOOGLE_REDIRECT_URI'));
-            $client->addScope(['openid', 'email', 'profile']);
+            $client->addScope(['openid', 'email', 'profile', GoogleServiceDrive::DRIVE]);
 
             $token = $client->fetchAccessTokenWithAuthCode($code);
             if (isset($token['error'])) {
                 return response()->json(['error' => $token['error']], 400);
             }
 
-            $client->setAccessToken($token['access_token']);
+            $client->setAccessToken($token);
+
             $oauth2 = new \Google\Service\Oauth2($client);
             $googleUser = $oauth2->userinfo->get();
 
@@ -107,7 +109,7 @@ class OtpController extends Controller
             $jwtToken = Auth::guard('api')->login($user);
 
             if ($request->has('mobile')) {
-                return redirect()->away("com.aidocumentation:/google-auth-success?token={$jwtToken}");
+                return redirect()->away("com.aidocumentation://auth/google/callback?token={$jwtToken}");
             }
 
             return $this->respondWithToken($jwtToken, $user);

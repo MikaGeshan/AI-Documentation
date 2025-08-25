@@ -43,8 +43,14 @@
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.DEFAULT" />
             <category android:name="android.intent.category.BROWSABLE" />
-        <data android:scheme="com.aidocumentation" android:host="auth-callback" />
-      </intent-filter>
+
+            <data
+                android:scheme="com.aidocumentation"
+                android:host="auth"
+                android:path="/google/callback" />
+        </intent-filter>
+
+      
       </activity>
     </application>
 </manifest>

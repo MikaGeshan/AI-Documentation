@@ -13,24 +13,17 @@
   <string>twitter</string>
   <string>tiktoksharesdk</string>
 </array>
-<key>CFBundleURLTypes</key>
-	<array>
-	<dict>
-		<key>CFBundleURLSchemes</key>
-		<array>
-		<string>com.aidocumentation</string>
-		</array>
-	</dict>
-	</array>
-	<key>CFBundleURLTypes</key>
-	<array>
-	<dict>
-		<key>CFBundleURLSchemes</key>
-		<array>
-		<string>com.googleusercontent.apps.26723233307-7706ktadqcg17diik9v3cvsrdnlrbn90</string>
-		</array>
-	</dict>
-	</array>
+ <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleURLName</key>
+        <string>com.aidocumentation</string>
+        <key>CFBundleURLSchemes</key>
+        <array>
+          <string>com.aidocumentation</string>
+        </array>
+      </dict>
+    </array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>

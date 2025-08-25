@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { Alert, Linking } from 'react-native';
 import axios from 'axios';
-
 import VerifyOTPComponent from '../Components/VerifyOTPComponent';
 import VerifyOTPActions from '../Stores/VerifyOTPActions';
 import SignInActions from '../Stores/SignInActions';
@@ -25,59 +24,73 @@ const VerifyOTPContainer = () => {
     setIsResending,
   } = VerifyOTPActions();
 
-  // ---------- Deep Linking Listener ----------
-  useEffect(() => {
-    const handleDeepLink = async event => {
+  const handleTokenLogin = useCallback(
+    async token => {
       try {
-        console.log('[DeepLink] Event received:', event);
-        const url = event.url;
-        if (!url) return;
-
-        console.log('[DeepLink] URL:', url);
-
-        const token = url.match(/token=([^&]+)/)?.[1];
-        if (!token) {
-          console.log('[DeepLink] No JWT token found in URL');
-          return;
-        }
-
-        console.log('[DeepLink] JWT token found:', token);
-
-        // Optional: fetch user info from backend if needed
+        console.log('[Auth] JWT token found:', token);
         const response = await axios.get(`${Config.API_URL}/api/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         const user = response.data.user;
         await login({ access_token: token, user });
-        console.log('[DeepLink] Login success, navigating...');
         navigation.replace('ScreenBottomTabs');
       } catch (err) {
-        console.error('[DeepLink] Failed to handle deep link:', err);
-        Alert.alert(
-          'Google Auth Failed',
-          'Could not complete Google authentication.',
-        );
+        console.error('[Auth] Failed to login with token:', err);
+        Alert.alert('Google Auth Failed', 'Could not complete authentication.');
       }
+    },
+    [login, navigation],
+  );
+
+  useEffect(() => {
+    const handleDeepLink = event => {
+      const url = event.url;
+      console.log('[DeepLink] URL received:', url);
+
+      const code = url?.match(/code=([^&]+)/)?.[1];
+      const email = formData?.email?.trim().toLowerCase();
+
+      console.log('[DeepLink] Extracted email and code:', email, code);
+
+      if (!code) {
+        console.log('[DeepLink] No Google code found in URL');
+        return;
+      }
+
+      console.log('[DeepLink] Google code received:', code);
+
+      axios
+        .post(`${Config.API_URL}/api/auth/google/get-token`, {
+          code,
+          email,
+        })
+        .then(response => {
+          const { access_token } = response.data;
+          if (!access_token) throw new Error('No token returned');
+          handleTokenLogin(access_token);
+        })
+        .catch(err => {
+          console.error('[DeepLink] Failed to exchange Google code:', err);
+          Alert.alert(
+            'Google Auth Failed',
+            'Could not exchange Google code for token.',
+          );
+        });
     };
 
-    console.log('[DeepLink] Setting up listener...');
     const subscription = Linking.addEventListener('url', handleDeepLink);
 
     Linking.getInitialURL()
       .then(url => {
-        console.log('[DeepLink] Initial URL:', url);
         if (url) handleDeepLink({ url });
       })
       .catch(err => console.error('[DeepLink] getInitialURL error:', err));
 
     return () => {
-      console.log('[DeepLink] Removing listener');
       subscription.remove();
     };
-  }, [login, navigation]);
+  }, [formData.email, handleTokenLogin]);
 
-  // ---------- OTP Verification ----------
   const handleVerify = async () => {
     if (!validateCode()) return;
 
@@ -95,24 +108,15 @@ const VerifyOTPContainer = () => {
         `${Config.API_URL}/api/verify-otp`,
         payload,
       );
-
       const { auth_url, access_token, user, google_tokens } = response.data;
+
       console.log('[OTP] Response:', response.data);
 
       if (auth_url) {
         const separator = auth_url.includes('?') ? '&' : '?';
         const authUrlWithMobile = `${auth_url}${separator}mobile=1`;
-
-        console.log(
-          '[OTP] Opening Google consent URL for mobile:',
-          authUrlWithMobile,
-        );
-        try {
-          await Linking.openURL(authUrlWithMobile);
-        } catch (err) {
-          console.error('[OTP] Failed to open URL:', err);
-          Alert.alert('Error', 'Cannot open Google consent page.');
-        }
+        console.log('[OTP] Opening Google consent browser:', authUrlWithMobile);
+        await Linking.openURL(authUrlWithMobile);
         return;
       }
 
@@ -128,45 +132,35 @@ const VerifyOTPContainer = () => {
     }
   };
 
-  // ---------- OTP Handling ----------
   const handleCodeChange = value => {
-    console.log('[OTP] Code changed:', value);
     setCode(value);
     if (error) setError('');
   };
 
   const validateCode = () => {
-    console.log('[OTP] Validating code:', code);
     if (!code) {
       setError('Please enter verification code');
-      console.log('[OTP] Validation failed: empty code');
       return false;
     }
     if (code.length !== 6) {
       setError('Please enter complete 6-digit code');
-      console.log('[OTP] Validation failed: incomplete code');
       return false;
     }
-    console.log('[OTP] Code validated successfully');
     return true;
   };
 
   const handleResendCode = async () => {
-    console.log('[OTP] Resend code requested');
     setIsResending(true);
     setError('');
 
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('[OTP] Code resent successfully');
       Alert.alert(
         'Code Sent',
         'A new verification code has been sent to your email.',
-        [{ text: 'OK' }],
       );
       setCode('');
     } catch (err) {
-      console.error('[OTP] Resend failed:', err);
       setError('Failed to resend code. Please try again.');
     } finally {
       setIsResending(false);

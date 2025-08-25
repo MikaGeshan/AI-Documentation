@@ -64,6 +64,7 @@ class GoogleTokenService
         $client->setPrompt('consent');
 
         $tokenData = $client->fetchAccessTokenWithAuthCode($serverAuthCode);
+        Log::info($serverAuthCode);
 
         if (isset($tokenData['error'])) {
             Log::error("[GoogleTokenService] Failed to exchange auth code", ['error' => $tokenData]);
@@ -96,10 +97,8 @@ class GoogleTokenService
             $client->setAccessType('offline');
             $client->setPrompt('consent');
 
-            // Use login_hint to suggest account email
             $client->setLoginHint($email);
 
-            // Attempt to fetch existing token if user already exists
             $user = User::where('email', $email)->first();
 
             if ($user && $user->access_token) {

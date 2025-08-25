@@ -10,9 +10,9 @@ export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
     webClientId: GOOGLE_WEB_CLIENT_ID,
     iosClientId: GOOGLE_IOS_CLIENT_ID,
-    client_type: '3',
     offlineAccess: true,
-    scopes: ['profile', 'email'],
+    forceCodeForRefreshToken: true,
+    scopes: ['https://www.googleapis.com/auth/drive'],
   });
   console.log('[GoogleAuth] Google Sign-In configured.');
 };
@@ -25,37 +25,45 @@ export const signInWithGoogle = async ({ handleSuccessfulLogin }) => {
 
     console.log('[GoogleAuth] Starting Google Sign-In...');
     const userInfo = await GoogleSignin.signIn();
-    console.log('[GoogleAuth] Google Sign-In success:', userInfo);
+    console.log(
+      '[GoogleAuth] Raw userInfo:',
+      JSON.stringify(userInfo, null, 2),
+    );
 
-    const idToken = userInfo?.idToken || userInfo?.data?.idToken;
-    const serverAuthCode =
-      userInfo?.serverAuthCode || userInfo?.data?.serverAuthCode;
-    const email = userInfo?.email || userInfo?.data?.user?.email;
+    const idToken = userInfo?.idToken;
+    const serverAuthCode = userInfo?.serverAuthCode;
+    const email = userInfo?.user?.email;
+
+    console.log('[GoogleAuth] Extracted:', { idToken, serverAuthCode, email });
 
     if (!idToken || !serverAuthCode || !email) {
       throw new Error('Missing credentials from Google Sign-In');
     }
 
-    console.log('[GoogleAuth] Sending data to backend...');
+    console.log('[GoogleAuth] Sending data to backend:', Config.API_URL);
     const res = await axios.post(`${Config.API_URL}/api/auth/google`, {
       idToken,
       email,
       serverAuthCode,
     });
 
+    console.log('[GoogleAuth] Backend response:', res.data);
+
     const { token, user } = res.data;
 
-    console.log('[GoogleAuth] Storing tokens in AsyncStorage...');
     await AsyncStorage.setItem('ID_Token', idToken);
     await AsyncStorage.setItem('token', token);
     await AsyncStorage.setItem('role', user.role || 'user');
     await AsyncStorage.setItem('user', JSON.stringify(user));
 
-    console.log('[GoogleAuth] Calling handleSuccessfulLogin callback...');
     await handleSuccessfulLogin({ access_token: token, user });
     console.log('[GoogleAuth] Google Sign-In flow complete.');
   } catch (error) {
-    console.error('[GoogleAuth] Sign-In error:', error?.message || error);
+    console.error(
+      '[GoogleAuth] Sign-In error details:',
+      error?.message || error,
+      error,
+    );
   }
 };
 

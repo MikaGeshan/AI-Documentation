@@ -111,7 +111,7 @@ class GoogleAuthController extends Controller
         ]);
 
         $email = strtolower($request->input('email'));
-        $serverAuthCode = $request->input('code');
+        $serverAuthCode =urldecode( $request->input('code'));
 
         try {
             $tokens = GoogleTokenService::exchangeAuthCodeAndStore($email, $serverAuthCode);
