@@ -103,7 +103,7 @@ class GoogleAuthController extends Controller
         return false;
     }
 
-    public function getTokens(Request $request)
+   public function getTokens(Request $request)
     {
         $request->validate([
             'email' => 'required|email',
@@ -111,15 +111,23 @@ class GoogleAuthController extends Controller
         ]);
 
         $email = strtolower($request->input('email'));
-        $serverAuthCode =urldecode( $request->input('code'));
+        $serverAuthCode = urldecode($request->input('code'));
 
         try {
             $tokens = GoogleTokenService::exchangeAuthCodeAndStore($email, $serverAuthCode);
 
+            $user = User::firstOrCreate(['email' => $email]);
+
+            $jwtToken = JWTAuth::fromUser($user);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Google tokens stored successfully',
-                'tokens'  => $tokens,
+                'google_tokens' => $tokens,
+                'access_token' => $jwtToken,
+                'token_type' => 'bearer',
+                'expires_in' => JWTAuth::factory()->getTTL() * 60,
+                'user' => $user->only(['id', 'name', 'email']),
             ]);
 
         } catch (\Throwable $e) {
@@ -129,6 +137,4 @@ class GoogleAuthController extends Controller
             ], 500);
         }
     }
-
-    
 }

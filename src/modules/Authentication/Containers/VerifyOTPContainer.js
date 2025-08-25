@@ -25,13 +25,9 @@ const VerifyOTPContainer = () => {
   } = VerifyOTPActions();
 
   const handleTokenLogin = useCallback(
-    async token => {
+    async (token, user) => {
       try {
         console.log('[Auth] JWT token found:', token);
-        const response = await axios.get(`${Config.API_URL}/api/me`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        const user = response.data.user;
         await login({ access_token: token, user });
         navigation.replace('ScreenBottomTabs');
       } catch (err) {
@@ -65,9 +61,10 @@ const VerifyOTPContainer = () => {
           email,
         })
         .then(response => {
-          const { access_token } = response.data;
+          const { access_token, user } = response.data;
           if (!access_token) throw new Error('No token returned');
-          handleTokenLogin(access_token);
+          handleTokenLogin(access_token, user);
+          console.log('Response Retrieved', response.data);
         })
         .catch(err => {
           console.error('[DeepLink] Failed to exchange Google code:', err);
