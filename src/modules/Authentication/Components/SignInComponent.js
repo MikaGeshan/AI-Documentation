@@ -14,7 +14,6 @@ import InputText from '../../../components/Inputs/InputText';
 import Button from '../../../components/Buttons/Button';
 import Hyperlink from '../../../components/Buttons/Hyperlink';
 import { Icon } from '../../../components/Icons/Icon';
-import SuccessDialog from '../../../components/Alerts/SuccessDialog';
 import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
 
 const SignInComponent = ({
@@ -27,7 +26,6 @@ const SignInComponent = ({
   setShowPassword,
   setShowSuccessDialog,
   handleLogin,
-  handleForgotPassword,
   signInWithGoogle,
   navigateToRegister,
 }) => {
@@ -179,11 +177,6 @@ const SignInComponent = ({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <SuccessDialog
-          message="Welcome back!"
-          visible={showSuccessDialog}
-          onHide={() => setShowSuccessDialog(false)}
-        />
         <ScrollView
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}
@@ -247,31 +240,28 @@ const SignInComponent = ({
                 <Text style={styles.errorText}>{errors.password}</Text>
               ) : null}
             </View>
-            <View style={styles.forgotPasswordContainer}>
-              <Hyperlink
-                text="Forgot Password?"
-                onPress={handleForgotPassword}
-              />
-            </View>
             <Button
               text={isLoading ? 'Signing In...' : 'Sign In'}
               onPress={handleLogin}
               disabled={isLoading}
             />
-            <View style={styles.separatorContainer}>
-              <View style={styles.separatorLine} />
-              <Text style={styles.separatorText}>Or Sign In With</Text>
-              <View style={styles.separatorLine} />
-            </View>
+            {Platform.OS === 'ios' && (
+              <>
+                <View style={styles.separatorContainer}>
+                  <View style={styles.separatorLine} />
+                  <Text style={styles.separatorText}>Or Sign In With</Text>
+                  <View style={styles.separatorLine} />
+                </View>
 
-            <View style={styles.googleButtonContainer}>
-              <GoogleSigninButton
-                onPress={() => signInWithGoogle()}
-                size={GoogleSigninButton.Size.Wide}
-                color={GoogleSigninButton.Color.Dark}
-              />
-            </View>
-
+                <View style={styles.googleButtonContainer}>
+                  <GoogleSigninButton
+                    onPress={() => signInWithGoogle()}
+                    size={GoogleSigninButton.Size.Wide}
+                    color={GoogleSigninButton.Color.Dark}
+                  />
+                </View>
+              </>
+            )}
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>
               <Hyperlink text="Register Now!" onPress={navigateToRegister} />

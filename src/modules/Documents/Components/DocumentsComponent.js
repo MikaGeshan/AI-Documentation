@@ -17,6 +17,7 @@ import InputModal from '../../../components/Inputs/InputModal';
 import InputSelect from '../../../components/Inputs/InputSelect';
 import UploadDirectoryModal from '../../../components/Uploads/UploadDirectoryModal';
 import Config from '../../../App/Network';
+import SignInActions from '../../Authentication/Stores/SignInActions';
 
 const DocumentsComponent = ({
   folders,
@@ -55,6 +56,7 @@ const DocumentsComponent = ({
   setShowError,
   navigation,
   selectedFolderId,
+  viewDocument,
 }) => {
   const renderFolders = () => {
     return folders.map(folder => {
@@ -144,15 +146,7 @@ const DocumentsComponent = ({
           )}"?`}
           option1Text="View"
           option2Text="Download"
-          onOption1={() => {
-            setShowOption(false);
-            if (selectedDoc?.id) {
-              navigation.navigate('ViewDocument', {
-                url: `${Config.API_URL}/api/view-docs?file_id=${selectedDoc.id}`,
-                title: selectedDoc.name,
-              });
-            }
-          }}
+          onOption1={viewDocument}
           onOption2={async () => {
             await downloadAndShareFile(selectedDoc);
             setShowOption(false);

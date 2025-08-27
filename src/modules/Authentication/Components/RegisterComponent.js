@@ -117,24 +117,6 @@ const RegisterComponent = ({
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      {showSuccessDialog && (
-        <View style={styles.dialogContainer}>
-          <SuccessDialog
-            message="Account created successfully!"
-            onHide={() => setShowSuccessDialog(false)}
-          />
-        </View>
-      )}
-
-      {showErrorDialog && (
-        <View style={styles.dialogContainer}>
-          <ErrorDialog
-            message="Account creation failed. Please try again."
-            onHide={() => setShowErrorDialog(false)}
-          />
-        </View>
-      )}
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardContainer}

@@ -32,7 +32,10 @@ const VerifyOTPContainer = () => {
         navigation.replace('ScreenBottomTabs');
       } catch (err) {
         console.error('[Auth] Failed to login with token:', err);
-        Alert.alert('Google Auth Failed', 'Could not complete authentication.');
+        Alert.alert(
+          'Login Failed',
+          'Could not log in automatically. Please try again.',
+        );
       }
     },
     [login, navigation],
@@ -46,31 +49,23 @@ const VerifyOTPContainer = () => {
       const code = url?.match(/code=([^&]+)/)?.[1];
       const email = formData?.email?.trim().toLowerCase();
 
-      console.log('[DeepLink] Extracted email and code:', email, code);
-
       if (!code) {
         console.log('[DeepLink] No Google code found in URL');
         return;
       }
 
-      console.log('[DeepLink] Google code received:', code);
-
       axios
-        .post(`${Config.API_URL}/api/auth/google/get-token`, {
-          code,
-          email,
-        })
+        .post(`${Config.API_URL}/api/auth/google/get-token`, { code, email })
         .then(response => {
           const { access_token, user } = response.data;
           if (!access_token) throw new Error('No token returned');
           handleTokenLogin(access_token, user);
-          console.log('Response Retrieved', response.data);
         })
         .catch(err => {
           console.error('[DeepLink] Failed to exchange Google code:', err);
           Alert.alert(
-            'Google Auth Failed',
-            'Could not exchange Google code for token.',
+            'Verification Failed',
+            'Could not verify Google login. Please try again.',
           );
         });
     };
@@ -83,10 +78,8 @@ const VerifyOTPContainer = () => {
       })
       .catch(err => console.error('[DeepLink] getInitialURL error:', err));
 
-    return () => {
-      subscription.remove();
-    };
-  }, [formData.email, handleTokenLogin]);
+    return () => subscription.remove();
+  }, [formData?.email, handleTokenLogin]);
 
   const handleVerify = async () => {
     if (!validateCode()) return;
@@ -100,20 +93,15 @@ const VerifyOTPContainer = () => {
         otp: code,
       };
 
-      console.log('[OTP] Sending verify request:', payload);
       const response = await axios.post(
         `${Config.API_URL}/api/verify-otp`,
         payload,
       );
       const { auth_url, access_token, user, google_tokens } = response.data;
 
-      console.log('[OTP] Response:', response.data);
-
       if (auth_url) {
         const separator = auth_url.includes('?') ? '&' : '?';
-        const authUrlWithMobile = `${auth_url}${separator}mobile=1`;
-        console.log('[OTP] Opening Google consent browser:', authUrlWithMobile);
-        await Linking.openURL(authUrlWithMobile);
+        await Linking.openURL(`${auth_url}${separator}mobile=1`);
         return;
       }
 
@@ -121,6 +109,10 @@ const VerifyOTPContainer = () => {
       navigation.replace('ScreenBottomTabs');
     } catch (err) {
       console.error('[OTP] Verification failed:', err);
+      Alert.alert(
+        'Verification Failed',
+        err.response?.data?.message || 'Please try again.',
+      );
       setError(
         err.response?.data?.message || 'Verification failed. Please try again.',
       );
@@ -158,6 +150,7 @@ const VerifyOTPContainer = () => {
       );
       setCode('');
     } catch (err) {
+      Alert.alert('Error', 'Failed to resend code. Please try again.');
       setError('Failed to resend code. Please try again.');
     } finally {
       setIsResending(false);

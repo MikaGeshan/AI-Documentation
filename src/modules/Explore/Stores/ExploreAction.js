@@ -17,6 +17,7 @@ export const ExploreAction = create((set, get) => ({
         `${Config.API_URL}/api/explore-contents`,
       );
       set({ exploreData: response.data.data, isLoading: false });
+      console.log('Retrieved explore content:', response.data.data);
     } catch (error) {
       console.error('Failed to fetch explore content:', error);
       set({ isLoading: false });

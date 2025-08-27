@@ -7,22 +7,20 @@ const SuccessDialog = ({ message, visible, onHide }) => {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
 
   useEffect(() => {
-    if (!visible) return;
-
-    Animated.parallel([
-      Animated.timing(opacityAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        friction: 5,
-      }),
-    ]).start();
-
-    const timeout = setTimeout(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 5,
+        }),
+      ]).start();
+    } else {
       Animated.parallel([
         Animated.timing(opacityAnim, {
           toValue: 0,
@@ -37,10 +35,8 @@ const SuccessDialog = ({ message, visible, onHide }) => {
       ]).start(() => {
         if (onHide) onHide();
       });
-    }, 3000);
-
-    return () => clearTimeout(timeout);
-  }, [visible, opacityAnim, scaleAnim, onHide]);
+    }
+  }, [visible]);
 
   if (!visible) return null;
 

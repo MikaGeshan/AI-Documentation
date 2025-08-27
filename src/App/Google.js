@@ -19,20 +19,19 @@ export const configureGoogleSignIn = () => {
 
 export const signInWithGoogle = async ({ handleSuccessfulLogin }) => {
   try {
-    console.log('[GoogleAuth] Checking Play Services...');
     await GoogleSignin.hasPlayServices();
-    console.log('[GoogleAuth] Play Services OK.');
 
     console.log('[GoogleAuth] Starting Google Sign-In...');
+
     const userInfo = await GoogleSignin.signIn();
     console.log(
-      '[GoogleAuth] Raw userInfo:',
+      '[GoogleAuth] Retrieved userInfo:',
       JSON.stringify(userInfo, null, 2),
     );
 
-    const idToken = userInfo?.idToken;
-    const serverAuthCode = userInfo?.serverAuthCode;
-    const email = userInfo?.user?.email;
+    const idToken = userInfo?.data?.idToken;
+    const serverAuthCode = userInfo?.data?.serverAuthCode;
+    const email = userInfo?.data?.user?.email;
 
     console.log('[GoogleAuth] Extracted:', { idToken, serverAuthCode, email });
 

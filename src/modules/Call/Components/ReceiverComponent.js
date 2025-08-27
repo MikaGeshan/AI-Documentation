@@ -1,16 +1,8 @@
 import React from 'react';
 import { KeyboardAvoidingView, SafeAreaView, StyleSheet } from 'react-native';
-import CallLayout from '../../../components/Call/CallLayout';
+import ReceiverContainer from '../Containers/ReceiverContainer';
 
-export default function ReceiverComponent({
-  localStream,
-  remoteStream,
-  callStarted,
-  muteMic,
-  onAnswerCall,
-  onToggleMic,
-  socketReady,
-}) {
+export default function ReceiverComponent({ socketReady }) {
   const styles = StyleSheet.create({
     safeContainer: {
       flex: 1,
@@ -25,15 +17,7 @@ export default function ReceiverComponent({
   return (
     <SafeAreaView style={styles.safeContainer}>
       <KeyboardAvoidingView style={styles.keyboardContainer}>
-        <CallLayout
-          localStream={localStream}
-          remoteStream={remoteStream}
-          callStarted={callStarted}
-          onPressCall={onAnswerCall}
-          onPressMic={onToggleMic}
-          isMicOn={muteMic}
-          onHideCallButton
-        />
+        <ReceiverContainer />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

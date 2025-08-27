@@ -1,26 +1,29 @@
 import React from 'react';
-import { Alert } from 'react-native';
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import SignInComponent from '../Components/SignInComponent';
 import SignInActions from '../Stores/SignInActions';
 import { signInWithGoogle } from '../../../App/Google';
 import Config from '../../../App/Network';
+import SuccessDialog from '../../../components/Alerts/SuccessDialog';
+import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 
 const SignInContainer = () => {
   const navigation = useNavigation();
-  const { login } = SignInActions();
 
   const {
+    login,
     formData,
     errors,
     showPassword,
     showSuccessDialog,
+    showErrorDialog,
     isLoading,
     updateFormData,
     setErrors,
     setShowPassword,
     setShowSuccessDialog,
+    setShowErrorDialog,
     setIsLoading,
     resetForm,
   } = SignInActions();
@@ -58,37 +61,17 @@ const SignInContainer = () => {
     try {
       const { access_token, user } = data;
       await login({ access_token, user });
-
       resetForm();
-
-      console.log('[handleSuccessfulLogin] Setting showSuccessDialog = true');
       setShowSuccessDialog(true);
-
-      console.log(
-        '[handleSuccessfulLogin] Waiting 2 seconds before navigation...',
-      );
-      setTimeout(() => {
-        console.log(
-          '[handleSuccessfulLogin] Setting showSuccessDialog = false',
-        );
-        setShowSuccessDialog(false);
-
-        console.log('[handleSuccessfulLogin] Navigating to ScreenBottomTabs');
-        navigation.replace('ScreenBottomTabs');
-      }, 3600);
     } catch (error) {
       console.error('Login handling failed:', error);
+      setShowErrorDialog(true);
     }
   };
 
   const handleLoginError = data => {
-    const errorMessage =
-      data?.message || 'Invalid credentials. Please try again.';
-    setErrors({
-      emailOrName: 'Please check your credentials',
-      password: 'Please check your credentials',
-    });
-    Alert.alert('Login Failed', errorMessage);
+    console.error('[handleLoginError]', data?.message || 'Login failed');
+    setShowErrorDialog(true);
   };
 
   const handleLogin = async () => {
@@ -108,43 +91,52 @@ const SignInContainer = () => {
       );
       handleSuccessfulLogin(response.data);
     } catch (error) {
-      if (error.response && error.response.data) {
-        handleLoginError(error.response.data);
-      } else {
-        Alert.alert(
-          'Connection Error',
-          'Unable to connect to server. Please check your internet connection and try again.',
-        );
-      }
+      handleLoginError(error.response?.data);
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(
-      'Forgot Password',
-      'This feature will be available soon. Please contact support if you need help.',
-    );
+    setShowErrorDialog(true);
   };
 
   return (
-    <SignInComponent
-      formData={formData}
-      errors={errors}
-      showPassword={showPassword}
-      showSuccessDialog={showSuccessDialog}
-      isLoading={isLoading}
-      updateFormData={updateFormData}
-      setShowPassword={setShowPassword}
-      setShowSuccessDialog={setShowSuccessDialog}
-      handleLogin={handleLogin}
-      handleForgotPassword={handleForgotPassword}
-      signInWithGoogle={() =>
-        signInWithGoogle({ navigation, handleSuccessfulLogin })
-      }
-      navigateToRegister={() => navigation.navigate('Register')}
-    />
+    <>
+      <SignInComponent
+        formData={formData}
+        errors={errors}
+        showPassword={showPassword}
+        isLoading={isLoading}
+        updateFormData={updateFormData}
+        setShowPassword={setShowPassword}
+        handleLogin={handleLogin}
+        handleForgotPassword={handleForgotPassword}
+        signInWithGoogle={() =>
+          signInWithGoogle({ navigation, handleSuccessfulLogin })
+        }
+        navigateToRegister={() => navigation.navigate('Register')}
+      />
+
+      {showSuccessDialog && (
+        <SuccessDialog
+          message="Login successful!"
+          visible={true}
+          onHide={() => {
+            setShowSuccessDialog(false);
+            setTimeout(() => navigation.replace('ScreenBottomTabs'), 3000);
+          }}
+        />
+      )}
+
+      {showErrorDialog && (
+        <ErrorDialog
+          message="Login failed. Please check your credentials."
+          visible={true}
+          onHide={(() => setShowErrorDialog(false), 3000)}
+        />
+      )}
+    </>
   );
 };
 

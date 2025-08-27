@@ -17,6 +17,8 @@ const ExploreContainer = () => {
     setIsRefreshing,
   } = ExploreAction();
 
+  console.log('explore data retrieved', exploreData);
+
   const handleNavigation = (
     filter = 'all',
     sort = { field: 'id', order: 'asc' },

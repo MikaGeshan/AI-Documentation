@@ -9,7 +9,6 @@ import {
   RefreshControl,
 } from 'react-native';
 import CardExplore from '../../../components/Cards/CardExplore';
-import Config from '../../../App/Network';
 
 const ViewExploreListComponent = ({
   displayData,
@@ -19,6 +18,7 @@ const ViewExploreListComponent = ({
   onRefresh,
   navigation,
   handleDeleteExplore,
+  imageUri,
 }) => {
   const styles = StyleSheet.create({
     safeView: { flex: 1 },
@@ -53,7 +53,7 @@ const ViewExploreListComponent = ({
                   title={item.title}
                   filter={item.filter}
                   description={item.description}
-                  image={`${Config.API_URL}${item.image}`}
+                  image={{ uri: item.image || item.imageUri }}
                   isEditing={isEditing}
                   isDeleting={isDeleting}
                   onPress={() =>

@@ -9,6 +9,7 @@ const SignInActions = create(set => ({
   errors: {},
   showPassword: false,
   showSuccessDialog: false,
+  showErrorDialog: false,
   isLoading: false,
 
   updateFormData: (field, value) =>
@@ -20,6 +21,7 @@ const SignInActions = create(set => ({
   setErrors: errors => set({ errors }),
   setShowPassword: value => set({ showPassword: value }),
   setShowSuccessDialog: value => set({ showSuccessDialog: value }),
+  setShowErrorDialog: value => set({ showErrorDialog: value }),
   setIsLoading: value => set({ isLoading: value }),
 
   resetForm: () =>
@@ -58,6 +60,8 @@ const SignInActions = create(set => ({
       user: null,
       token: null,
       isAdmin: false,
+      showSuccessDialog: false,
+      showErrorDialog: false,
     });
   },
 

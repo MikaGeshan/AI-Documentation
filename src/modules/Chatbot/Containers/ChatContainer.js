@@ -55,51 +55,43 @@ const preloadAllDocuments = async () => {
   }
 };
 
-// Inside ChatContainer
-
 const isAppListQuery = userMessage => {
-  const lower = userMessage.toLowerCase().trim();
-  const matchPatterns = [
-    /^apa saja aplikasi/i,
-    /^sebutkan aplikasi/i,
-    /^list aplikasi/i,
-    /^daftar aplikasi/i,
-    /^dokumen yang tersedia/i,
-    /^dokumen apa saja/i,
-    /^aplikasi apa saja yang tersedia/i,
-    /^tolong tampilkan daftar aplikasi/i,
-  ];
-
-  return matchPatterns.some(pattern => pattern.test(lower));
+  const lower = userMessage.toLowerCase();
+  return (
+    lower.includes('daftar aplikasi') ||
+    lower.includes('list aplikasi') ||
+    lower.includes('apa saja aplikasi') ||
+    lower.includes('dokumen yang tersedia')
+  );
 };
 
 const getAppListResponse = async userMessage => {
-  const allDocuments = await getFolderContents(); // reuse your existing service
-  const folderNames = [...new Set(allDocuments.map(doc => doc.folder))];
+  const allDocuments = await getFolderContents();
+  const subfolders = allDocuments?.subfolders || [];
 
-  const lowerMsg = userMessage.toLowerCase();
-  const folderGuess = folderNames.find(folder =>
-    lowerMsg.includes(folder.toLowerCase()),
-  );
-
-  if (folderGuess) {
-    const documents = allDocuments.filter(doc => doc.folder === folderGuess);
-    const fileNames = documents.map(doc => doc.name).filter(Boolean);
-
-    if (fileNames.length === 0) {
-      return `No Documents found in folder *${folderGuess}*.`;
-    }
-
-    return `Documents list in folder *${folderGuess}*:\n\n- ${fileNames.join(
-      '\n- ',
-    )}`;
-  }
-
-  if (folderNames.length === 0) {
+  if (subfolders.length === 0) {
     return 'No Documentation about the application.';
   }
 
-  return `List of documented applications:\n\n- ${folderNames.join('\n- ')}`;
+  const lowerMsg = userMessage.toLowerCase();
+  const folderGuess = subfolders.find(folder =>
+    lowerMsg.includes(folder.name.toLowerCase()),
+  );
+
+  if (folderGuess) {
+    const fileNames = folderGuess.files.map(f => f.name).filter(Boolean);
+    if (fileNames.length === 0) {
+      return `No Documents found in folder *${folderGuess.name}*.`;
+    }
+
+    return `Documents list in folder *${
+      folderGuess.name
+    }*:\n\n- ${fileNames.join('\n- ')}`;
+  }
+
+  return `List of documented applications:\n\n- ${subfolders
+    .map(f => f.name)
+    .join('\n- ')}`;
 };
 
 let controller = null;
@@ -107,15 +99,15 @@ let controller = null;
 const createAbortController = () => (controller = new AbortController());
 const getAbortSignal = () =>
   controller?.signal || (controller = new AbortController()).signal;
-const abortDeepSeekRequest = () => {
+export const abortDeepSeekRequest = () => {
   controller?.abort();
   console.log('[DeepSeek] Request aborted.');
 };
 
 const stageMessages = {
-  fetching: 'Listing Documents...',
-  parsing: 'Processing document contents...',
-  reading: 'Reading documents and composing answers...',
+  fetching: 'Listing Folders and Documents...',
+  parsing: 'Processing folder contents...',
+  reading: 'Reading contents and composing answers...',
 };
 
 const SYSTEM_PROMPT = (docs, userMessage) => `
@@ -194,7 +186,7 @@ const ChatContainer = () => {
         url: `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
       };
     } catch (error) {
-      console.error('❌ Document conversion failed:', error.message);
+      console.error('Document conversion failed:', error.message);
       return null;
     }
   };
@@ -211,93 +203,104 @@ const ChatContainer = () => {
       showStageMessage('fetching');
       let finalAnswer = '';
 
-      const earlyResponse = await greetingsAndListApp(userText.trim());
-      if (earlyResponse) {
-        finalAnswer = earlyResponse;
+      if (isAppListQuery(userText)) {
+        finalAnswer = await getAppListResponse(userText);
       } else {
-        const documents = await getFolderContents();
-        const subfolders = documents?.subfolders || [];
-
-        if (subfolders.length === 0) {
-          finalAnswer = 'No documents available.';
+        const earlyResponse = await greetingsAndListApp(userText.trim());
+        if (earlyResponse) {
+          finalAnswer = earlyResponse;
         } else {
-          const mentionedApps = detectMentionedApps(
-            userText,
-            subfolders.map(f => f.name),
-          );
+          const documents = await getFolderContents();
+          const subfolders = documents?.subfolders || [];
 
-          if (mentionedApps.length === 0) {
-            finalAnswer = 'No applications found based on your question.';
-          } else {
-            showStageMessage('parsing');
-
-            const matchedDocs = subfolders
-              .filter(folder =>
-                mentionedApps.some(app =>
-                  folder.name.toLowerCase().includes(app.toLowerCase()),
-                ),
-              )
-              .flatMap(folder =>
-                folder.files.map(file => ({
-                  ...file,
-                  folderName: folder.name,
-                  folderLink: folder.webViewLink,
-                })),
-              )
-              .slice(0, MAX_DOCS);
-
-            if (matchedDocs.length === 0) {
-              finalAnswer = 'No documents matched your question.';
+          if (isAppListQuery(userText)) {
+            if (subfolders.length === 0) {
+              finalAnswer = 'No documented applications available.';
             } else {
-              const docChunks = [];
-              for (const doc of matchedDocs) {
-                if (!doc.id) continue;
+              const appList = subfolders.map(f => f.name);
+              finalAnswer = `List of documented applications:\n\n- ${appList.join(
+                '\n- ',
+              )}`;
+            }
+          } else {
+            const mentionedApps = detectMentionedApps(
+              userText,
+              subfolders.map(f => f.name),
+            );
 
-                const cached = await getCachedDocument(doc.id);
-                if (cached) {
-                  docChunks.push(cached);
-                } else {
-                  const converted = await convertDocument(doc.id);
-                  if (converted?.content) {
-                    await cacheDocument(doc.id, converted);
-                    docChunks.push(converted);
+            if (mentionedApps.length === 0) {
+              finalAnswer = 'No applications found based on your question.';
+            } else {
+              showStageMessage('parsing');
+
+              const matchedDocs = subfolders
+                .filter(folder =>
+                  mentionedApps.some(app =>
+                    folder.name.toLowerCase().includes(app.toLowerCase()),
+                  ),
+                )
+                .flatMap(folder =>
+                  folder.files.map(file => ({
+                    ...file,
+                    folderName: folder.name,
+                    folderLink: folder.webViewLink,
+                  })),
+                )
+                .slice(0, MAX_DOCS);
+
+              if (matchedDocs.length === 0) {
+                finalAnswer = 'No documents matched your question.';
+              } else {
+                const docChunks = [];
+                for (const doc of matchedDocs) {
+                  if (!doc.id) continue;
+
+                  const cached = await getCachedDocument(doc.id);
+                  if (cached) {
+                    docChunks.push(cached);
+                  } else {
+                    const converted = await convertDocument(doc.id);
+                    if (converted?.content) {
+                      await cacheDocument(doc.id, converted);
+                      docChunks.push(converted);
+                    }
                   }
                 }
-              }
 
-              if (docChunks.length === 0) {
-                finalAnswer = 'Gagal memproses isi dokumen.';
-              } else {
-                showStageMessage('reading');
-                const prompt = SYSTEM_PROMPT(docChunks, userText);
+                if (docChunks.length === 0) {
+                  finalAnswer = 'Gagal memproses isi dokumen.';
+                } else {
+                  showStageMessage('reading');
+                  const prompt = SYSTEM_PROMPT(docChunks, userText);
 
-                createAbortController();
-                const { data } = await axios.post(
-                  DEEPSEEK_URL,
-                  {
-                    model: DEEPSEEK_MODEL,
-                    messages: [
-                      {
-                        role: 'system',
-                        content:
-                          'Kamu adalah asisten dokumentasi teknis yang cerdas...',
-                      },
-                      { role: 'user', content: prompt },
-                    ],
-                    temperature: 0.3,
-                  },
-                  {
-                    headers: {
-                      'Content-Type': 'application/json',
-                      Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+                  createAbortController();
+                  const { data } = await axios.post(
+                    DEEPSEEK_URL,
+                    {
+                      model: DEEPSEEK_MODEL,
+                      messages: [
+                        {
+                          role: 'system',
+                          content:
+                            'Kamu adalah asisten dokumentasi teknis yang cerdas...',
+                        },
+                        { role: 'user', content: prompt },
+                      ],
+                      temperature: 0.3,
                     },
-                    signal: getAbortSignal(),
-                  },
-                );
+                    {
+                      headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+                      },
+                      signal: getAbortSignal(),
+                    },
+                  );
 
-                finalAnswer =
-                  data?.choices?.[0]?.message?.content?.trim() ||
-                  'Tidak ada jawaban yang dihasilkan dari dokumen.';
+                  finalAnswer =
+                    data?.choices?.[0]?.message?.content?.trim() ||
+                    'Tidak ada jawaban yang dihasilkan dari dokumen.';
+                }
               }
             }
           }
@@ -307,7 +310,7 @@ const ChatContainer = () => {
       clearStageMessage();
       addMessage({ id: `ai-${Date.now()}`, text: finalAnswer, sender: 'ai' });
     } catch (err) {
-      console.error('⚠️ ChatContainer error:', err.message);
+      console.error('ChatContainer error:', err.message);
       clearStageMessage();
       addMessage({
         id: `ai-${Date.now()}`,

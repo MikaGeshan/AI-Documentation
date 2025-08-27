@@ -58,22 +58,36 @@ const CardExplore = ({
       marginTop: 2,
       textAlign: 'left',
     },
+    iconContainer: {
+      flexDirection: 'row',
+      marginTop: 8,
+    },
+    iconButton: {
+      marginRight: 12,
+    },
   });
 
   return (
     <TouchableWithoutFeedback onPress={onPress}>
       <View style={styles.container}>
         <View style={styles.imageContainer}>
-          <Image source={{ uri: image }} style={styles.image} />
+          {image ? (
+            <>
+              {console.log('Image loaded:', image)}
+              <Image source={{ uri: image }} style={styles.image} />
+            </>
+          ) : (
+            <Text>No image available</Text>
+          )}
         </View>
         <View style={styles.infoContainer}>
           <Text style={styles.title}>{title}</Text>
           {!!filter && <Text style={styles.filter}>{filter}</Text>}
         </View>
         {(isEditing || isDeleting) && (
-          <View style={{ flexDirection: 'row', marginTop: 8 }}>
+          <View style={styles.iconContainer}>
             {isEditing && (
-              <Pressable onPress={onPressEdit} style={{ marginRight: 12 }}>
+              <Pressable onPress={onPressEdit} style={styles.iconButton}>
                 <Icon name="SquarePen" size={20} color="black" />
               </Pressable>
             )}

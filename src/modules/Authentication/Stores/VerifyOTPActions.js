@@ -16,6 +16,9 @@ const VerifyOTPActions = create(set => ({
 
   consentAuthUrl: '',
   setConsentAuthUrl: value => set({ consentAuthUrl: value }),
+
+  showErrorDialog: false,
+  setShowErrorDialog: value => set({ showErrorDialog: value }),
 }));
 
 export default VerifyOTPActions;

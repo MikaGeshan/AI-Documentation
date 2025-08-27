@@ -5,7 +5,7 @@ import { createPeerConnection, getLocalStream } from '../../../App/WebRTC';
 import { initializeSocket } from '../../../App/Network';
 import SignInActions from '../../Authentication/Stores/SignInActions';
 import { ReceiverAction } from '../Stores/ReceiverAction';
-import ReceiverComponent from '../Components/ReceiverComponent';
+import CallLayout from '../../../components/Call/CallLayout';
 
 export default function ReceiverContainer() {
   const {
@@ -44,12 +44,27 @@ export default function ReceiverContainer() {
 
       socket.on('signal', ({ data, fromUserId }) => {
         if (data.type === 'offer') {
-          setOffer({ sdp: data, from: fromUserId });
           callerIdRef.current = fromUserId;
+
+          if (!pcRef.current) {
+            const pc = createPeerConnection(setRemoteStream);
+            pcRef.current = pc;
+
+            pc.onicecandidate = event => {
+              if (event.candidate) {
+                socket.emit('signal', {
+                  data: { candidate: event.candidate },
+                  targetUserId: callerIdRef.current,
+                });
+              }
+            };
+          }
+
+          setOffer({ sdp: data, from: fromUserId });
         } else if (data.candidate) {
+          // ICE candidates can now be added safely
           pcRef.current?.addIceCandidate(new RTCIceCandidate(data.candidate));
         } else if (data.type === 'call-ended') {
-          console.log('Call ended by caller');
           endCall(false);
         }
       });
@@ -64,8 +79,7 @@ export default function ReceiverContainer() {
   }, [user]);
 
   const answerCall = async () => {
-    if (!socketReady) return console.warn('[Socket] Not ready');
-    if (!offer) return;
+    if (!socketReady || !offer) return;
 
     const socket = socketRef.current;
     console.log('Receive Offer', offer);
@@ -73,22 +87,14 @@ export default function ReceiverContainer() {
     const stream = await getLocalStream();
     setLocalStream(stream);
 
-    const pc = createPeerConnection(setRemoteStream);
-    pcRef.current = pc;
-    stream.getTracks().forEach(track => pc.addTrack(track, stream));
+    // Add local tracks to PCx
+    stream.getTracks().forEach(track => pcRef.current.addTrack(track, stream));
 
-    pc.onicecandidate = event => {
-      if (event.candidate) {
-        socket.emit('signal', {
-          data: { candidate: event.candidate },
-          targetUserId: callerIdRef.current,
-        });
-      }
-    };
-
-    await pc.setRemoteDescription(new RTCSessionDescription(offer.sdp));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
+    await pcRef.current.setRemoteDescription(
+      new RTCSessionDescription(offer.sdp),
+    );
+    const answer = await pcRef.current.createAnswer();
+    await pcRef.current.setLocalDescription(answer);
 
     socket.emit('signal', { data: answer, targetUserId: callerIdRef.current });
     setCallStarted(true);
@@ -133,12 +139,12 @@ export default function ReceiverContainer() {
   };
 
   return (
-    <ReceiverComponent
+    <CallLayout
       localStream={localStream}
       remoteStream={remoteStream}
       callStarted={callStarted}
       muteMic={muteMic}
-      onAnswerCall={answerCall}
+      onAnswerCall={offer ? answerCall : null}
       onToggleMic={mute}
       onEndCall={endCall}
       socketReady={socketReady}

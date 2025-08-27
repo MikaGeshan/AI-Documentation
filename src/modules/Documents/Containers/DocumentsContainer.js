@@ -10,6 +10,7 @@ import SignInActions from '../../Authentication/Stores/SignInActions';
 import SuccessDialog from '../../../components/Alerts/SuccessDialog';
 import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 import Config, { autoConfigureIP } from '../../../App/Network';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 const DocumentsContainer = () => {
   const {
@@ -50,7 +51,10 @@ const DocumentsContainer = () => {
 
   const loadFolders = DocumentAction(state => state.loadFolders);
 
+  const navigation = useNavigation();
+
   const user = SignInActions(state => state.user);
+
   const isAdmin = SignInActions(state => state.isAdmin);
 
   useEffect(() => {
@@ -93,7 +97,7 @@ const DocumentsContainer = () => {
       const response = await axios.get(url);
       const data = response.data;
 
-      const mapped = {
+      const mapSubFolders = {
         subfolders: data.subfolders.map(sub => ({
           id: sub.id,
           name: sub.name,
@@ -108,8 +112,8 @@ const DocumentsContainer = () => {
         })),
       };
 
-      console.log(mapped);
-      return mapped;
+      console.log(mapSubFolders);
+      return mapSubFolders;
     } catch (error) {
       console.error(
         'Failed to fetch drive contents',
@@ -161,6 +165,21 @@ const DocumentsContainer = () => {
   //     return null;
   //   }
   // };
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      const data = await getFolderContents();
+      if (data) {
+        await AsyncStorage.setItem('doc-folder-map', JSON.stringify(data));
+        await loadFolders();
+      }
+    } catch (e) {
+      console.error('Error refreshing folders:', e);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const createFolder = async name => {
     try {
@@ -221,8 +240,15 @@ const DocumentsContainer = () => {
       const { id, name } = doc;
       const downloadUrl = `${Config.API_URL}/api/download-docs?file_id=${id}`;
       const localPath = `${RNFS.DocumentDirectoryPath}/${
-        name || 'Dokumen'
+        name || 'Untitled Document'
       }.pdf`;
+
+      console.log('Starting download for:', {
+        id,
+        name,
+        downloadUrl,
+        localPath,
+      });
 
       setIsDownloading(true);
       setDownloadProgress(0);
@@ -234,29 +260,61 @@ const DocumentsContainer = () => {
           const progress = Math.floor(
             (data.bytesWritten / data.contentLength) * 100,
           );
+          console.log(`Download progress: ${progress}%`);
           setDownloadProgress(progress);
         },
-        begin: () => setDownloadProgress(0),
+        begin: () => {
+          console.log('Download started...');
+          setDownloadProgress(0);
+        },
         progressDivider: 1,
       });
 
       const result = await download.promise;
+      console.log('Download result:', result);
+
       setIsDownloading(false);
 
       if (result.statusCode === 200) {
-        await Share.open({
-          url: 'file://' + localPath,
-          type: 'application/pdf',
-        });
+        console.log('Download completed at:', localPath);
+
+        if (Platform.OS === 'ios') {
+          console.log('Sharing file on iOS:', localPath);
+          await Share.open({
+            url: 'file://' + localPath,
+            type: 'application/pdf',
+          });
+        } else {
+          console.log('Skipping share on Android, file saved at:', localPath);
+        }
+
         setSuccessMessage('Document Successfully Downloaded.');
         setShowSuccess(true);
       } else {
+        console.error(`Download failed with status: ${result.statusCode}`);
         throw new Error(`Download failed. Status: ${result.statusCode}`);
       }
     } catch (err) {
+      console.error('Error downloading document:', err);
       setIsDownloading(false);
       setErrorMessage('Error Downloading Document');
       setShowError(true);
+    }
+  };
+
+  const viewDocument = () => {
+    setShowOption(false);
+    if (selectedDoc?.webViewLink) {
+      let url = selectedDoc.webViewLink;
+
+      if (url.includes('docs.google.com/document')) {
+        url = url.replace(/\/(edit|view).*$/, '/preview');
+      }
+
+      navigation.navigate('ViewDocument', {
+        url,
+        title: selectedDoc.name,
+      });
     }
   };
 
@@ -289,25 +347,11 @@ const DocumentsContainer = () => {
     setShowSelectModal(false);
   };
 
-  const onRefresh = async () => {
-    try {
-      setRefreshing(true);
-      const data = await getFolderContents();
-      if (data) {
-        await AsyncStorage.setItem('doc-folder-map', JSON.stringify(data));
-        await loadFolders();
-      }
-    } catch (e) {
-      console.error('Error refreshing folders:', e);
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
   return (
     <>
       <DocumentsComponent
         folders={folders}
+        navigation={navigation}
         selectedDoc={selectedDoc}
         loading={loading}
         isDownloading={isDownloading}
@@ -342,19 +386,21 @@ const DocumentsContainer = () => {
         setShowSuccess={setShowSuccess}
         setShowError={setShowError}
         selectedFolderId={selectedFolderId}
+        viewDocument={viewDocument}
       />
 
       {showSuccess && (
         <SuccessDialog
           message={successMessage}
+          visible={true}
           onHide={() => setShowSuccess(false)}
         />
       )}
 
       {showError && (
         <ErrorDialog
-          visible={showError}
           message={errorMessage}
+          visible={true}
           onHide={() => setShowError(false)}
         />
       )}

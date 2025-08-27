@@ -4,8 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
 import { createPeerConnection, getLocalStream } from '../../../App/WebRTC';
 import SignInActions from '../../Authentication/Stores/SignInActions';
-import CallerComponent from '../Components/CallerComponent';
 import { CallerAction } from '../Stores/CallerAction';
+import CallLayout from '../../../components/Call/CallLayout';
 
 export default function CallerContainer() {
   const {
@@ -175,7 +175,7 @@ export default function CallerContainer() {
   }
 
   return (
-    <CallerComponent
+    <CallLayout
       localStream={localStream}
       remoteStream={remoteStream}
       callStarted={callStarted}

@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 import React, { useState } from 'react';
 import ButtonSend from '../Buttons/ButtonSend';
-import { abortDeepSeekRequest } from '../../hooks/ai/abortDeepSeekResponse';
+import { abortDeepSeekRequest } from '../../modules/Chatbot/Containers/ChatContainer';
 
 const InputBox = ({ onSend }) => {
   const [isProcessing, setIsProcessing] = useState(false);

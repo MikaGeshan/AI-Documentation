@@ -5,6 +5,8 @@ import axios from 'axios';
 import RegisterComponent from '../Components/RegisterComponent';
 import { RegisterActions } from '../Stores/RegisterActions';
 import Config from '../../../App/Network';
+import ErrorDialog from '../../../components/Alerts/ErrorDialog';
+import SuccessDialog from '../../../components/Alerts/SuccessDialog';
 
 const RegisterContainer = () => {
   const navigation = useNavigation();
@@ -40,19 +42,17 @@ const RegisterContainer = () => {
           password: '',
           confirmPassword: '',
         });
-
         navigation.replace('Verify', { formData: { email: formData.email } });
       }, 3000);
     }
-
-    return () => clearTimeout(timer);
+    return () => timer && clearTimeout(timer);
   }, [
-    setShowSuccessDialog,
     showSuccessDialog,
+    formData.email,
+    navigation,
+    setShowSuccessDialog,
     resetForm,
     setFormData,
-    navigation,
-    formData.email,
   ]);
 
   const handleRegistrationError = data => {
@@ -103,23 +103,41 @@ const RegisterContainer = () => {
   const signInLink = () => navigation.navigate('Login');
 
   return (
-    <RegisterComponent
-      formData={formData}
-      errors={errors}
-      setFormData={setFormData}
-      showPassword={showPassword}
-      togglePassword={togglePassword}
-      showConfirmPassword={showConfirmPassword}
-      setShowConfirmPassword={setShowConfirmPassword}
-      showSuccessDialog={showSuccessDialog}
-      showErrorDialog={showErrorDialog}
-      isLoading={isLoading}
-      handleRegister={handleRegister}
-      signInLink={signInLink}
-      setShowSuccessDialog={setShowSuccessDialog}
-      setShowErrorDialog={setShowErrorDialog}
-      navigation={navigation}
-    />
+    <>
+      <RegisterComponent
+        formData={formData}
+        errors={errors}
+        setFormData={setFormData}
+        showPassword={showPassword}
+        togglePassword={togglePassword}
+        showConfirmPassword={showConfirmPassword}
+        setShowConfirmPassword={setShowConfirmPassword}
+        showSuccessDialog={showSuccessDialog}
+        showErrorDialog={showErrorDialog}
+        isLoading={isLoading}
+        handleRegister={handleRegister}
+        signInLink={signInLink}
+        setShowSuccessDialog={setShowSuccessDialog}
+        setShowErrorDialog={setShowErrorDialog}
+        navigation={navigation}
+      />
+
+      {showSuccessDialog && (
+        <SuccessDialog
+          message="Account created successfully!"
+          visible={true}
+          onHide={() => setShowSuccessDialog(false)}
+        />
+      )}
+
+      {showErrorDialog && (
+        <ErrorDialog
+          message="Account creation failed. Please try again."
+          visible={true}
+          onHide={() => setShowErrorDialog(false)}
+        />
+      )}
+    </>
   );
 };
 
