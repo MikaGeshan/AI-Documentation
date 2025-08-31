@@ -16,26 +16,17 @@ import FloatingActionButton from '../../../components/Buttons/FloatingActionButt
 import InputModal from '../../../components/Inputs/InputModal';
 import InputSelect from '../../../components/Inputs/InputSelect';
 import UploadDirectoryModal from '../../../components/Uploads/UploadDirectoryModal';
-import Config from '../../../App/Network';
-import SignInActions from '../../Authentication/Stores/SignInActions';
 
 const DocumentsComponent = ({
   folders,
   selectedDoc,
   loading,
-  // isDownloading,
-  // initialLoadProgress,
-  // downloadProgress,
   showOption,
   expandedFolder,
   uploadModalVisible,
   inputModalVisible,
   showSelectModal,
   selectMode,
-  successMessage,
-  showSuccess,
-  errorMessage,
-  showError,
   isAdmin,
   refreshing,
   formatDocName,
@@ -70,8 +61,8 @@ const DocumentsComponent = ({
             setExpandedFolder(expandedFolder === folder.id ? null : folder.id)
           }
         >
-          {Array.isArray(folder.docs) && folder.docs.length > 0 ? (
-            folder.docs.map((doc, idx) => (
+          {Array.isArray(folder.files) && folder.files.length > 0 ? (
+            folder.files.map((doc, idx) => (
               <TouchableOpacity
                 key={idx}
                 style={styles.itemContainer}
@@ -80,9 +71,7 @@ const DocumentsComponent = ({
                   setTimeout(() => setShowOption(true), 100);
                 }}
               >
-                <Text style={styles.itemText}>
-                  {formatDocName(doc.title || doc.name)}
-                </Text>
+                <Text style={styles.itemText}>{formatDocName(doc.name)}</Text>
                 <Icon name="Ellipsis" size={16} color="#4aa8ea" />
               </TouchableOpacity>
             ))

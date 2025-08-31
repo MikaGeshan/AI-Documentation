@@ -36,7 +36,8 @@ export const DocumentAction = create(set => ({
       const folderList = data.subfolders.map(sub => ({
         id: sub.id,
         folderName: sub.name,
-        docs: sub.files || [],
+        webViewLink: sub.webViewLink,
+        files: sub.files || [],
       }));
 
       set({ folders: folderList, initialLoadProgress: 100 });

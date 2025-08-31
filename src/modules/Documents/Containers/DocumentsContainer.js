@@ -9,8 +9,9 @@ import { DocumentAction } from '../Stores/DocumentAction';
 import SignInActions from '../../Authentication/Stores/SignInActions';
 import SuccessDialog from '../../../components/Alerts/SuccessDialog';
 import ErrorDialog from '../../../components/Alerts/ErrorDialog';
-import Config, { autoConfigureIP } from '../../../App/Network';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import Config from '../../../App/Network';
+import { useNavigation } from '@react-navigation/native';
+import Loader from '../../../components/Loaders/Loader';
 
 const DocumentsContainer = () => {
   const {
@@ -18,9 +19,7 @@ const DocumentsContainer = () => {
     selectedDoc,
     selectedFolderId,
     loading,
-    initialLoadProgress,
     isDownloading,
-    downloadProgress,
     showOption,
     expandedFolder,
     uploadModalVisible,
@@ -59,11 +58,6 @@ const DocumentsContainer = () => {
 
   useEffect(() => {
     const init = async () => {
-      const ip = await autoConfigureIP();
-      if (!ip) {
-        console.warn('Auto Configure IP failed. Skipping folder load.');
-        return;
-      }
       await loadFolders();
     };
     init();
@@ -353,20 +347,12 @@ const DocumentsContainer = () => {
         folders={folders}
         navigation={navigation}
         selectedDoc={selectedDoc}
-        loading={loading}
-        isDownloading={isDownloading}
-        initialLoadProgress={initialLoadProgress}
-        downloadProgress={downloadProgress}
         showOption={showOption}
         expandedFolder={expandedFolder}
         uploadModalVisible={uploadModalVisible}
         inputModalVisible={inputModalVisible}
         showSelectModal={showSelectModal}
         selectMode={selectMode}
-        successMessage={successMessage}
-        showSuccess={showSuccess}
-        errorMessage={errorMessage}
-        showError={showError}
         isAdmin={isAdmin}
         refreshing={refreshing}
         formatDocName={formatDocName}
@@ -404,6 +390,8 @@ const DocumentsContainer = () => {
           onHide={() => setShowError(false)}
         />
       )}
+
+      <Loader visible={loading || isDownloading} />
     </>
   );
 };
