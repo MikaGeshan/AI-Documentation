@@ -7,6 +7,7 @@ import { RegisterActions } from '../Stores/RegisterActions';
 import Config from '../../../App/Network';
 import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 import SuccessDialog from '../../../components/Alerts/SuccessDialog';
+import Loader from '../../../components/Loaders/Loader';
 
 const RegisterContainer = () => {
   const navigation = useNavigation();
@@ -137,6 +138,7 @@ const RegisterContainer = () => {
           onHide={() => setShowErrorDialog(false)}
         />
       )}
+      <Loader visible={isLoading} />
     </>
   );
 };

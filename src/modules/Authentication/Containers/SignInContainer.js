@@ -7,6 +7,7 @@ import { signInWithGoogle } from '../../../App/Google';
 import Config from '../../../App/Network';
 import SuccessDialog from '../../../components/Alerts/SuccessDialog';
 import ErrorDialog from '../../../components/Alerts/ErrorDialog';
+import Loader from '../../../components/Loaders/Loader';
 
 const SignInContainer = () => {
   const navigation = useNavigation();
@@ -136,6 +137,8 @@ const SignInContainer = () => {
           onHide={(() => setShowErrorDialog(false), 3000)}
         />
       )}
+
+      <Loader visible={isLoading} />
     </>
   );
 };
