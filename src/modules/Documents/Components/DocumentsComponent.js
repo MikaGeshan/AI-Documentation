@@ -198,7 +198,7 @@ const DocumentsComponent = ({
           }
           data={
             selectMode === 'delete'
-              ? folders?.flatMap(f => f.docs || []) || []
+              ? folders?.flatMap(f => f.files || []) || []
               : folders || []
           }
           filterKey={selectMode === 'delete' ? 'name' : 'folderName'}

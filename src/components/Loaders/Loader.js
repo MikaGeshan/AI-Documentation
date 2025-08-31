@@ -41,8 +41,8 @@ const Loader = ({ visible }) => {
       alignItems: 'center',
       justifyContent: 'center',
       borderRadius: 10,
-      width: 64,
-      height: 64,
+      width: 100,
+      height: 100,
     },
     spinner: {
       width: 50,
