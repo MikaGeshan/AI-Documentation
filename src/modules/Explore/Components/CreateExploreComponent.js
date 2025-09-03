@@ -13,14 +13,11 @@ import React from 'react';
 import InputText from '../../../components/Inputs/InputText';
 import Dropdown from '../../../components/Selects/Dropdown';
 import Button from '../../../components/Buttons/Button';
-import SuccessDialog from '../../../components/Alerts/SuccessDialog';
-import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 
 const CreateExploreComponent = ({
   formData,
   errors,
   setFormData,
-  showDialog,
   onPickImage,
   onSubmit,
   getFilter,
@@ -91,16 +88,6 @@ const CreateExploreComponent = ({
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          <SuccessDialog
-            message={'Successfully Created Explore Item'}
-            visible={showDialog}
-          />
-
-          {/* <ErrorDialog
-            message={'Error Creating Explore Item'}
-            visible={showDialog}
-          /> */}
-
           <View style={styles.inputGroup}>
             <Text style={styles.text}>Title</Text>
             <View style={errors.title && styles.errorBorder}>
@@ -186,7 +173,6 @@ const CreateExploreComponent = ({
             )}
             {errors.image && <Text style={styles.errors}>{errors.image}</Text>}
           </View>
-
           <Button text="Create" onPress={onSubmit} />
         </ScrollView>
       </KeyboardAvoidingView>

@@ -10,8 +10,11 @@ export const CreateExploreAction = create((set, get) => ({
   },
   errors: {},
 
-  showDialog: false,
-  setShowDialog: value => set({ showDialog: value }),
+  showSuccessDialog: false,
+  showErrorDialog: false,
+
+  setShowSuccessDialog: value => set({ showSuccessDialog: value }),
+  setShowErrorDialog: value => set({ ShowErrorDialog: value }),
 
   setFormData: (field, value) =>
     set(state => ({

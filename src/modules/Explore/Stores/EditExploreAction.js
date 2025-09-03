@@ -18,12 +18,14 @@ export const EditExploreAction = create(set => ({
     set(state => ({ errors: { ...state.errors, [key]: value } })),
   resetErrors: () => set({ errors: {} }),
 
-  showDialog: false,
-  setShowDialog: value => set({ showDialog: value }),
   imageFile: null,
   setImageFile: file => set({ imageFile: file }),
   originalData: {},
   setOriginalData: data => set({ originalData: data }),
+  showSuccessDialog: false,
+  showErrorDialog: false,
+  setShowSuccessDialog: value => set({ showSuccessDialog: value }),
+  setShowErrorDialog: value => set({ ShowErrorDialog: value }),
 
   validateForm: () => {
     let valid = true;

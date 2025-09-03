@@ -5,6 +5,8 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { EditExploreAction } from '../Stores/EditExploreAction';
 import EditExploreComponent from '../Components/EditExploreComponent';
 import Config from '../../../App/Network';
+import SuccessDialog from '../../../components/Alerts/SuccessDialog';
+import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 
 const EditExploreContainer = ({ route, navigation }) => {
   const { onRefresh, exploreItem } = route.params || {};
@@ -12,14 +14,16 @@ const EditExploreContainer = ({ route, navigation }) => {
     formData,
     setFormData,
     errors,
-    showDialog,
-    setShowDialog,
     imageFile,
     setImageFile,
     originalData,
     setOriginalData,
     validateForm,
     resetForm,
+    showSuccessDialog,
+    setShowSuccessDialog,
+    showErrorDialog,
+    setShowErrorDialog,
   } = EditExploreAction();
 
   useEffect(() => {
@@ -69,7 +73,7 @@ const EditExploreContainer = ({ route, navigation }) => {
       }
     } catch (err) {
       console.error('Image pick error:', err);
-      Alert.alert('Error', 'Failed to pick image');
+      setShowErrorDialog(true);
     }
   };
   const handleSubmit = async () => {
@@ -108,30 +112,33 @@ const EditExploreContainer = ({ route, navigation }) => {
       setImageFile(null);
 
       if (typeof onRefresh === 'function') onRefresh();
-
-      setShowDialog(true);
+      setShowSuccessDialog(true);
       setTimeout(() => {
-        setShowDialog(false);
+        setShowSuccessDialog(false);
         navigation.goBack();
       }, 3000);
     } catch (error) {
       console.error('Update error:', error.response?.data || error);
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'Failed to update explore item',
-      );
+      setShowErrorDialog(true);
     }
   };
 
   return (
-    <EditExploreComponent
-      formData={formData}
-      errors={errors}
-      setFormData={setFormData}
-      showDialog={showDialog}
-      imagePicker={imagePicker}
-      handleSubmit={handleSubmit}
-    />
+    <>
+      <EditExploreComponent
+        formData={formData}
+        errors={errors}
+        setFormData={setFormData}
+        imagePicker={imagePicker}
+        handleSubmit={handleSubmit}
+      />
+      {showSuccessDialog && (
+        <SuccessDialog message={'Success Updated Explorer'} visible={true} />
+      )}
+      {showErrorDialog && (
+        <ErrorDialog message={'Failed to Update the Explorer'} visible={true} />
+      )}
+    </>
   );
 };
 

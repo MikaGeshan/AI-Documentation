@@ -4,6 +4,8 @@ import axios from 'axios';
 import { ExploreAction } from '../Stores/ExploreAction';
 import ViewExploreListComponent from '../Components/ViewExploreListComponent';
 import Config from '../../../App/Network';
+import SuccessDialog from '../../../components/Alerts/SuccessDialog';
+import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 
 const ViewExploreListContainer = () => {
   const route = useRoute();
@@ -19,6 +21,10 @@ const ViewExploreListContainer = () => {
     isDeleting,
     isRefreshing,
     setIsRefreshing,
+    showSuccessDialog,
+    setShowSuccessDialog,
+    showErrorDialog,
+    setShowErrorDialog,
   } = ExploreAction();
 
   const handleDeleteExplore = async id => {
@@ -28,16 +34,29 @@ const ViewExploreListContainer = () => {
       );
       if (response.status === 200) {
         console.log('Success', 'Explore item deleted successfully.');
-        await onRefresh();
+
+        setShowSuccessDialog(true);
+
+        setTimeout(async () => {
+          setShowSuccessDialog(false);
+          await onRefresh();
+        }, 2500);
       } else {
         console.warn('Error', 'Failed to delete explore item.');
+        setShowErrorDialog(true);
+
+        setTimeout(() => {
+          setShowErrorDialog(false);
+        }, 3000);
       }
     } catch (error) {
       console.error('Delete error:', error.response?.data || error);
-      console.warn(
-        'Error',
-        error.response?.data?.message || 'Failed to delete explore item',
-      );
+      setShowErrorDialog(true);
+
+      // Auto-hide error dialog after 3 seconds
+      setTimeout(() => {
+        setShowErrorDialog(false);
+      }, 3000);
     }
   };
 
@@ -80,15 +99,26 @@ const ViewExploreListContainer = () => {
   }, [exploreData, filter, setDisplayData, sort]);
 
   return (
-    <ViewExploreListComponent
-      displayData={displayData}
-      isEditing={isEditing}
-      isDeleting={isDeleting}
-      isRefreshing={isRefreshing}
-      onRefresh={onRefresh}
-      navigation={navigation}
-      handleDeleteExplore={handleDeleteExplore}
-    />
+    <>
+      <ViewExploreListComponent
+        displayData={displayData}
+        isEditing={isEditing}
+        isDeleting={isDeleting}
+        isRefreshing={isRefreshing}
+        onRefresh={onRefresh}
+        navigation={navigation}
+        handleDeleteExplore={handleDeleteExplore}
+      />
+      {showSuccessDialog && (
+        <SuccessDialog
+          message={'Succesfully Deleted Explorer'}
+          visible={true}
+        />
+      )}
+      {showErrorDialog && (
+        <ErrorDialog message={'Failed to Delete Explorer'} visible={true} />
+      )}
+    </>
   );
 };
 

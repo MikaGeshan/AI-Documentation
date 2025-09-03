@@ -9,6 +9,8 @@ export const ExploreAction = create((set, get) => ({
   isRefreshing: false,
   isEditing: false,
   isDeleting: false,
+  showSuccessDialog: false,
+  showErrorDialog: false,
 
   getContent: async () => {
     try {
@@ -32,7 +34,10 @@ export const ExploreAction = create((set, get) => ({
 
   setExploreData: data => set({ exploreData: data }),
   setDisplayData: data => set({ displayData: data }),
+  setIsLoading: value => set({ isLoading: value }),
   setIsEditing: value => set({ isEditing: value }),
   setIsDeleting: value => set({ isDeleting: value }),
   setIsRefreshing: value => set({ isRefreshing: value }),
+  setShowSuccessDialog: value => set({ showSuccessDialog: value }),
+  setShowErrorDialog: value => set({ showErrorDialog: value }),
 }));

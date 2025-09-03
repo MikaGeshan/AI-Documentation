@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from '@react-navigation/native';
 import axios from 'axios';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 import CreateExploreComponent from '../Components/CreateExploreComponent';
 import { CreateExploreAction } from '../Stores/CreateExploreAction';
 import Config from '../../../App/Network';
+import SuccessDialog from '../../../components/Alerts/SuccessDialog';
+import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 
 const CreateExploreContainer = () => {
   const navigation = useNavigation();
@@ -16,12 +22,21 @@ const CreateExploreContainer = () => {
   const {
     formData,
     errors,
-    showDialog,
-    setShowDialog,
     setFormData,
     validateForm,
     resetForm,
+    showSuccessDialog,
+    setShowSuccessDialog,
+    showErrorDialog,
+    setShowErrorDialog,
   } = CreateExploreAction();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setShowSuccessDialog(false);
+      setShowErrorDialog(false);
+    }, [setShowSuccessDialog, setShowErrorDialog]),
+  );
 
   const imagePicker = async () => {
     try {
@@ -64,6 +79,7 @@ const CreateExploreContainer = () => {
     console.log('Submitting form:', formData);
 
     if (!validateForm()) return;
+
     try {
       const form = new FormData();
       form.append('title', formData.title);
@@ -87,35 +103,49 @@ const CreateExploreContainer = () => {
       });
 
       resetForm();
+
       if (typeof onRefresh === 'function') {
         onRefresh();
       }
 
-      setShowDialog(true);
+      setShowSuccessDialog(true);
 
       setTimeout(() => {
-        setShowDialog(false);
+        setShowSuccessDialog(false);
         navigation.goBack();
       }, 3000);
     } catch (error) {
       console.error('Upload error:', error.response?.data || error);
-      Alert.alert(
-        'Error',
-        error.response?.data?.message || 'Failed to create explore',
-      );
+
+      setShowErrorDialog(true);
+
+      setTimeout(() => {
+        setShowErrorDialog(false);
+      }, 3000);
     }
   };
 
   return (
-    <CreateExploreComponent
-      formData={formData}
-      errors={errors}
-      setFormData={setFormData}
-      getFilter={getFilter}
-      showDialog={showDialog}
-      onPickImage={imagePicker}
-      onSubmit={handleSubmit}
-    />
+    <>
+      <CreateExploreComponent
+        formData={formData}
+        errors={errors}
+        setFormData={setFormData}
+        getFilter={getFilter}
+        onPickImage={imagePicker}
+        onSubmit={handleSubmit}
+      />
+
+      {showSuccessDialog && (
+        <SuccessDialog
+          message={'Successfully Created Explore Item'}
+          visible={true}
+        />
+      )}
+      {showErrorDialog && (
+        <ErrorDialog message={'Error Creating Explore Item'} visible={true} />
+      )}
+    </>
   );
 };
 
