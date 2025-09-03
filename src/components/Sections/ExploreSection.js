@@ -1,7 +1,6 @@
 import { ScrollView, StyleSheet, View, Text } from 'react-native';
 import Hyperlink from '../../components/Buttons/Hyperlink';
 import CardExplore from '../Cards/CardExplore';
-import Config from '../../App/Network';
 
 const ExploreSection = ({
   title,
@@ -60,10 +59,11 @@ const ExploreSection = ({
           sorted.map((item, index) => (
             <View key={index} style={styles.cardWrapper}>
               <CardExplore
+                borderColor={'transparent'}
                 title={item.title}
                 filter={item.filter}
                 description={item.description}
-                image={`${Config.API_URL}${item.image}`}
+                image={`${item.image}`}
                 onPress={() =>
                   navigation.navigate('ViewExplore', {
                     id: item.id,

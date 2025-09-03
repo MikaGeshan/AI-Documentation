@@ -18,6 +18,7 @@ const CardExplore = ({
   isEditing,
   onPressDelete,
   isDeleting,
+  borderColor,
 }) => {
   const styles = StyleSheet.create({
     container: {
@@ -27,6 +28,9 @@ const CardExplore = ({
       paddingHorizontal: 8,
       alignItems: 'center',
       marginHorizontal: 6,
+      borderColor: borderColor,
+      borderWidth: 1,
+      borderRadius: 10,
     },
     imageContainer: {
       width: 150,

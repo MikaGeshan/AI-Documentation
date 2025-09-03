@@ -14,23 +14,12 @@ const ViewExploreListContainer = () => {
     exploreData,
     displayData,
     setDisplayData,
-    setExploreData,
+    getContent,
     isEditing,
     isDeleting,
     isRefreshing,
     setIsRefreshing,
   } = ExploreAction();
-
-  const getContent = useCallback(async () => {
-    try {
-      const response = await axios.get(
-        `${Config.API_URL}/api/explore-contents`,
-      );
-      setExploreData(response.data.data || []);
-    } catch (error) {
-      console.error('Failed to fetch explore content:', error);
-    }
-  }, [setExploreData]);
 
   const handleDeleteExplore = async id => {
     try {
