@@ -40,7 +40,7 @@ export default function CallerContainer() {
         console.log('[Socket] Connected:', socket.id);
         setSocketReady(true);
 
-        // Always re-register on connect
+        // Register user
         if (user?.id && user?.role) {
           socket.emit('register', { id: user.id, role: user.role });
           console.log('[Socket] Caller Registered:', user);
@@ -85,15 +85,39 @@ export default function CallerContainer() {
 
     return () => {
       active = false;
-      socketRef.current?.off('connect');
-      socketRef.current?.off('disconnect');
-      socketRef.current?.off('signal');
-      disconnectSocket();
-
-      pcRef.current?.close();
-      pcRef.current = null;
+      cleanup(); // cleanup everything when component unmounts
     };
   }, [user]);
+
+  const cleanup = () => {
+    console.log('[Cleanup] Cleaning up resources...');
+    try {
+      // close peer connection
+      pcRef.current?.close();
+      pcRef.current = null;
+
+      // stop media tracks
+      localStream?.getTracks().forEach(track => track.stop());
+      setLocalStream(null);
+
+      remoteStream?.getTracks().forEach(track => track.stop());
+      setRemoteStream(null);
+
+      // clear socket
+      if (socketRef.current) {
+        socketRef.current.off('connect');
+        socketRef.current.off('disconnect');
+        socketRef.current.off('signal');
+        disconnectSocket();
+        socketRef.current = null;
+      }
+
+      setCallStarted(false);
+      setSocketReady(false);
+    } catch (err) {
+      console.error('[Cleanup] Error:', err);
+    }
+  };
 
   const startCall = async () => {
     if (!socketReady || !socketRef.current) {
@@ -146,39 +170,23 @@ export default function CallerContainer() {
   };
 
   const endCall = (sendSignal = true) => {
-    const socket = socketRef.current;
-    if (!socket) {
-      console.warn('[Call] Cannot end call, socket not ready');
-      return;
-    }
-
     console.log('[Call] Ending call, sendSignal:', sendSignal);
 
     try {
-      if (sendSignal && targetUserIdRef.current) {
-        socket.emit('signal', {
+      if (sendSignal && socketRef.current && targetUserIdRef.current) {
+        socketRef.current.emit('signal', {
           data: { type: 'call-ended' },
           targetUserId: targetUserIdRef.current,
         });
         console.log('[Call] Call-ended signal sent');
       }
-
-      pcRef.current?.close();
-      pcRef.current = null;
-
-      localStream?.getTracks().forEach(track => track.stop());
-      setLocalStream(null);
-
-      remoteStream?.getTracks().forEach(track => track.stop());
-      setRemoteStream(null);
-
-      setCallStarted(false);
-      console.log('[Call] Reset call state');
-
-      navigation.replace('ScreenBottomTabs');
     } catch (err) {
-      console.error('[Call] Error ending call:', err);
+      console.error('[Call] Error sending end signal:', err);
     }
+
+    cleanup();
+
+    navigation.replace('ScreenBottomTabs');
   };
 
   if (!socketReady) {
