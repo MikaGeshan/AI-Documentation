@@ -2,7 +2,7 @@ import io from 'socket.io-client';
 
 const Config = {
   API_URL: 'https://ai-documentation-backend-pk2qh.sevalla.app',
-  SOCKET_URL: 'express-signal-server.vercel.app',
+  SOCKET_URL: 'https://express-signal-server-production.up.railway.app',
 };
 
 let socket = null;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 import VideoView from './VideoView';
 import ButtonCall from '../Buttons/ButtonCall';
 
@@ -12,8 +12,12 @@ export default function CallLayout({
   onPressEndCall,
   isMicOn = true,
   onHideCallButton = false,
+  role,
 }) {
-  const showCallButton = onHideCallButton ? !callStarted : true;
+  const isAdmin = role === 'admin';
+
+  const showCallButton = !isAdmin && (onHideCallButton ? !callStarted : true);
+
   const styles = StyleSheet.create({
     container: {
       flex: 1,
@@ -22,6 +26,8 @@ export default function CallLayout({
     },
     remoteVideo: {
       flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     localVideo: {
       position: 'absolute',
@@ -48,16 +54,30 @@ export default function CallLayout({
     buttonSpacing: {
       marginHorizontal: 8,
     },
+    placeholder: {
+      color: 'white',
+      fontSize: 16,
+      opacity: 0.6,
+    },
   });
 
   return (
     <View style={styles.container}>
-      {remoteStream && (
+      {remoteStream ? (
         <VideoView stream={remoteStream} style={styles.remoteVideo} />
+      ) : (
+        <View style={styles.remoteVideo}>
+          <Text style={styles.placeholder}>
+            {isAdmin
+              ? 'Waiting for caller to connect...'
+              : 'Waiting for admin to receive...'}
+          </Text>
+        </View>
       )}
       {localStream && (
         <VideoView stream={localStream} style={styles.localVideo} />
       )}
+
       <View style={styles.buttonContainer}>
         <View style={styles.buttonSpacing}>
           <ButtonCall

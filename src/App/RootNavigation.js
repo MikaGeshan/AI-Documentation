@@ -7,8 +7,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Header from '../components/Headers/Header';
 import { Icon } from '../components/Icons/Icon';
 import { useNavigation } from '@react-navigation/native';
-import CallerScreen from '../modules/Call/Components/CallerComponent';
-import ReceiverScreen from '../modules/Call/Components/ReceiverComponent';
 import ViewExploreComponent from '../modules/Explore/Components/ViewExploreComponent';
 import SignInContainer from '../modules/Authentication/Containers/SignInContainer';
 import RegisterContainer from '../modules/Authentication/Containers/RegisterContainer';
@@ -22,6 +20,8 @@ import CreateExploreContainer from '../modules/Explore/Containers/CreateExploreC
 import ExploreContainer from '../modules/Explore/Containers/ExploreContainer';
 import EditExploreContainer from '../modules/Explore/Containers/EditExploreContainer';
 import ViewExploreListContainer from '../modules/Explore/Containers/ViewExploreListContainer';
+import CallerContainer from '../modules/Call/Containers/CallerContainer';
+import ReceiverContainer from '../modules/Call/Containers/ReceiverContainer';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -190,12 +190,12 @@ export const RootNavigation = () => {
           />
           <Stack.Screen
             name="Caller"
-            component={CallerScreen}
+            component={CallerContainer}
             options={{ headerShown: true }}
           />
           <Stack.Screen
             name="Receiver"
-            component={ReceiverScreen}
+            component={ReceiverContainer}
             options={{ headerShown: true }}
           />
         </>

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { RTCIceCandidate, RTCSessionDescription } from 'react-native-webrtc';
 import { createPeerConnection, getLocalStream } from '../../../App/WebRTC';
-import { initializeSocket } from '../../../App/Network';
+import { initializeSocket, disconnectSocket } from '../../../App/Network';
 import SignInActions from '../../Authentication/Stores/SignInActions';
 import { ReceiverAction } from '../Stores/ReceiverAction';
 import CallLayout from '../../../components/Call/CallLayout';
@@ -29,20 +29,28 @@ export default function ReceiverContainer() {
   const callerIdRef = useRef(null);
 
   useEffect(() => {
+    let active = true;
+
     const setupSocket = async () => {
       const socket = await initializeSocket();
-      if (!socket) {
-        console.error('[Socket] Failed to initialize');
-        return;
-      }
+      if (!socket || !active) return;
 
       socketRef.current = socket;
-      setSocketReady(true);
 
-      socket.emit('register', { id: user.id, role: user.role });
-      console.log('[Socket] Receiver Registered:', user);
+      socket.on('connect', () => {
+        console.log('[Socket] Connected:', socket.id);
+        setSocketReady(true);
 
-      socket.on('signal', ({ data, fromUserId }) => {
+        socket.emit('register', { id: user.id, role: user.role });
+        console.log('[Socket] Receiver Registered:', user);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('[Socket] Disconnected');
+        setSocketReady(false);
+      });
+
+      socket.on('signal', async ({ data, fromUserId }) => {
         if (data.type === 'offer') {
           callerIdRef.current = fromUserId;
 
@@ -60,10 +68,41 @@ export default function ReceiverContainer() {
             };
           }
 
-          setOffer({ sdp: data, from: fromUserId });
+          console.log('[Receiver] Answering offer...');
+
+          try {
+            const stream = await getLocalStream();
+            setLocalStream(stream);
+
+            stream
+              .getTracks()
+              .forEach(track => pcRef.current.addTrack(track, stream));
+
+            await pcRef.current.setRemoteDescription(
+              new RTCSessionDescription(data),
+            );
+            const answer = await pcRef.current.createAnswer();
+            await pcRef.current.setLocalDescription(answer);
+
+            socket.emit('signal', {
+              data: answer,
+              targetUserId: callerIdRef.current,
+            });
+
+            setCallStarted(true);
+            console.log('[Receiver] Answer sent to caller');
+          } catch (err) {
+            console.error('[Receiver] Failed to auto-answer:', err);
+          }
         } else if (data.candidate) {
-          // ICE candidates can now be added safely
-          pcRef.current?.addIceCandidate(new RTCIceCandidate(data.candidate));
+          try {
+            await pcRef.current?.addIceCandidate(
+              new RTCIceCandidate(data.candidate),
+            );
+            console.log('[Receiver] ICE candidate added');
+          } catch (err) {
+            console.error('[Receiver] Error adding ICE candidate:', err);
+          }
         } else if (data.type === 'call-ended') {
           endCall(false);
         }
@@ -73,8 +112,14 @@ export default function ReceiverContainer() {
     setupSocket();
 
     return () => {
+      active = false;
+      socketRef.current?.off('connect');
+      socketRef.current?.off('disconnect');
       socketRef.current?.off('signal');
+      disconnectSocket();
+
       pcRef.current?.close();
+      pcRef.current = null;
     };
   }, [user]);
 
@@ -82,12 +127,12 @@ export default function ReceiverContainer() {
     if (!socketReady || !offer) return;
 
     const socket = socketRef.current;
-    console.log('Receive Offer', offer);
+    console.log('[Receiver] Received Offer:', offer);
 
     const stream = await getLocalStream();
     setLocalStream(stream);
 
-    // Add local tracks to PCx
+    // Add local tracks
     stream.getTracks().forEach(track => pcRef.current.addTrack(track, stream));
 
     await pcRef.current.setRemoteDescription(
@@ -96,7 +141,11 @@ export default function ReceiverContainer() {
     const answer = await pcRef.current.createAnswer();
     await pcRef.current.setLocalDescription(answer);
 
-    socket.emit('signal', { data: answer, targetUserId: callerIdRef.current });
+    socket.emit('signal', {
+      data: answer,
+      targetUserId: callerIdRef.current,
+    });
+
     setCallStarted(true);
   };
 
@@ -128,8 +177,10 @@ export default function ReceiverContainer() {
 
       localStream?.getTracks().forEach(track => track.stop());
       setLocalStream(null);
+
       remoteStream?.getTracks().forEach(track => track.stop());
       setRemoteStream(null);
+
       setCallStarted(false);
 
       navigation.replace('ScreenBottomTabs');
@@ -148,6 +199,7 @@ export default function ReceiverContainer() {
       onToggleMic={mute}
       onEndCall={endCall}
       socketReady={socketReady}
+      role={user.role}
     />
   );
 }
