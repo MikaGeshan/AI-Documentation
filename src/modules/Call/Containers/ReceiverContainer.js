@@ -16,9 +16,9 @@ export default function ReceiverContainer() {
     callStarted,
     setLocalStream,
     setRemoteStream,
-    setOffer,
     setMuteMic,
     setCallStarted,
+    setOffer,
   } = ReceiverAction();
 
   const [socketReady, setSocketReady] = useState(false);
@@ -53,7 +53,7 @@ export default function ReceiverContainer() {
       socket.on('signal', async ({ data, fromUserId }) => {
         if (data.type === 'offer') {
           callerIdRef.current = fromUserId;
-
+          setOffer(data);
           if (!pcRef.current) {
             const pc = createPeerConnection(setRemoteStream);
             pcRef.current = pc;
@@ -132,7 +132,6 @@ export default function ReceiverContainer() {
     const stream = await getLocalStream();
     setLocalStream(stream);
 
-    // Add local tracks
     stream.getTracks().forEach(track => pcRef.current.addTrack(track, stream));
 
     await pcRef.current.setRemoteDescription(
@@ -182,6 +181,7 @@ export default function ReceiverContainer() {
       setRemoteStream(null);
 
       setCallStarted(false);
+      setOffer(null);
 
       navigation.replace('ScreenBottomTabs');
     } catch (error) {

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export const CallerAction = create((set, get) => ({
+export const CallerAction = create(set => ({
   localStream: null,
   remoteStream: null,
   callStarted: false,

@@ -27,21 +27,6 @@ const SignInComponent = ({
   signInWithGoogle,
   navigateToRegister,
 }) => {
-  // console.log('SignInComponent props:', {
-  //   formData,
-  //   errors,
-  //   showPassword,
-  //   showSuccessDialog,
-  //   isLoading,
-  //   updateFormData,
-  //   setShowPassword,
-  //   setShowSuccessDialog,
-  //   handleLogin,
-  //   handleForgotPassword,
-  //   signInWithGoogle,
-  //   navigateToRegister,
-  // });
-
   const styles = StyleSheet.create({
     safeArea: {
       flex: 1,
@@ -186,63 +171,65 @@ const SignInComponent = ({
               <Text style={styles.title}>Let's Sign you in</Text>
               <Text style={styles.subtitle}>Sign in to continue</Text>
             </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email or Username</Text>
-              <InputText
-                placeholder="Enter your email or username"
-                autoCapitalize="none"
-                autoCorrect={false}
-                value={formData?.emailOrName || ''}
-                onChangeText={value => updateFormData('emailOrName', value)}
-                style={[
-                  styles.textInput,
-                  errors.emailOrName && styles.inputError,
-                ]}
-                returnKeyType="next"
-                keyboardType="email-address"
-              />
-              {errors.emailOrName ? (
-                <Text style={styles.errorText}>{errors.emailOrName}</Text>
-              ) : null}
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordContainer}>
+            <>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email or Username</Text>
                 <InputText
-                  placeholder="Enter your password"
-                  secureTextEntry={!showPassword}
+                  placeholder="Enter your email or username"
                   autoCapitalize="none"
                   autoCorrect={false}
-                  value={formData.password}
-                  onChangeText={value => updateFormData('password', value)}
+                  value={formData?.emailOrName || ''}
+                  onChangeText={value => updateFormData('emailOrName', value)}
                   style={[
                     styles.textInput,
-                    errors.password && styles.inputError,
+                    errors.emailOrName && styles.inputError,
                   ]}
-                  returnKeyType="done"
-                  onSubmitEditing={handleLogin}
+                  returnKeyType="next"
+                  keyboardType="email-address"
                 />
-                <TouchableOpacity
-                  style={styles.eyeIconContainer}
-                  onPress={() => setShowPassword(!showPassword)}
-                  activeOpacity={0.7}
-                >
-                  <Icon
-                    name={showPassword ? 'Eye' : 'EyeOff'}
-                    size={20}
-                    color="#666"
-                  />
-                </TouchableOpacity>
+                {errors.emailOrName ? (
+                  <Text style={styles.errorText}>{errors.emailOrName}</Text>
+                ) : null}
               </View>
-              {errors.password ? (
-                <Text style={styles.errorText}>{errors.password}</Text>
-              ) : null}
-            </View>
-            <Button
-              text={isLoading ? 'Signing In...' : 'Sign In'}
-              onPress={handleLogin}
-              disabled={isLoading}
-            />
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Password</Text>
+                <View style={styles.passwordContainer}>
+                  <InputText
+                    placeholder="Enter your password"
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={formData.password}
+                    onChangeText={value => updateFormData('password', value)}
+                    style={[
+                      styles.textInput,
+                      errors.password && styles.inputError,
+                    ]}
+                    returnKeyType="done"
+                    onSubmitEditing={handleLogin}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeIconContainer}
+                    onPress={() => setShowPassword(!showPassword)}
+                    activeOpacity={0.7}
+                  >
+                    <Icon
+                      name={showPassword ? 'Eye' : 'EyeOff'}
+                      size={20}
+                      color="#666"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password ? (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                ) : null}
+              </View>
+              <Button
+                text={isLoading ? 'Signing In...' : 'Sign In'}
+                onPress={handleLogin}
+                disabled={isLoading}
+              />
+            </>
             {Platform.OS === 'ios' && (
               <>
                 <View style={styles.separatorContainer}>
@@ -250,7 +237,6 @@ const SignInComponent = ({
                   <Text style={styles.separatorText}>Or Sign In With</Text>
                   <View style={styles.separatorLine} />
                 </View>
-
                 <View style={styles.googleButtonContainer}>
                   <GoogleSigninButton
                     onPress={() => signInWithGoogle()}
@@ -260,10 +246,12 @@ const SignInComponent = ({
                 </View>
               </>
             )}
-            <View style={styles.signUpContainer}>
-              <Text style={styles.signUpText}>Don't have an account?</Text>
-              <Hyperlink text="Register Now!" onPress={navigateToRegister} />
-            </View>
+            {Platform.OS === 'android' && (
+              <View style={styles.signUpContainer}>
+                <Text style={styles.signUpText}>Don't have an account?</Text>
+                <Hyperlink text="Register Now!" onPress={navigateToRegister} />
+              </View>
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

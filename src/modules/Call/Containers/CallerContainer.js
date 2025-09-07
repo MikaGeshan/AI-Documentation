@@ -40,7 +40,6 @@ export default function CallerContainer() {
         console.log('[Socket] Connected:', socket.id);
         setSocketReady(true);
 
-        // Register user
         if (user?.id && user?.role) {
           socket.emit('register', { id: user.id, role: user.role });
           console.log('[Socket] Caller Registered:', user);
@@ -85,25 +84,22 @@ export default function CallerContainer() {
 
     return () => {
       active = false;
-      cleanup(); // cleanup everything when component unmounts
+      cleanup();
     };
   }, [user]);
 
   const cleanup = () => {
     console.log('[Cleanup] Cleaning up resources...');
     try {
-      // close peer connection
       pcRef.current?.close();
       pcRef.current = null;
 
-      // stop media tracks
       localStream?.getTracks().forEach(track => track.stop());
       setLocalStream(null);
 
       remoteStream?.getTracks().forEach(track => track.stop());
       setRemoteStream(null);
 
-      // clear socket
       if (socketRef.current) {
         socketRef.current.off('connect');
         socketRef.current.off('disconnect');
@@ -173,18 +169,31 @@ export default function CallerContainer() {
     console.log('[Call] Ending call, sendSignal:', sendSignal);
 
     try {
-      if (sendSignal && socketRef.current && targetUserIdRef.current) {
-        socketRef.current.emit('signal', {
-          data: { type: 'call-ended' },
-          targetUserId: targetUserIdRef.current,
-        });
-        console.log('[Call] Call-ended signal sent');
+      if (sendSignal && socketRef.current) {
+        if (targetUserIdRef.current) {
+          socketRef.current.emit('signal', {
+            data: { type: 'call-ended' },
+            targetUserId: targetUserIdRef.current,
+          });
+          console.log('[Call] Call-ended signal sent');
+        } else {
+          console.log('[Call] No target user, skipping call-ended emit');
+        }
       }
     } catch (err) {
       console.error('[Call] Error sending end signal:', err);
     }
 
-    cleanup();
+    pcRef.current?.close();
+    pcRef.current = null;
+
+    localStream?.getTracks().forEach(track => track.stop());
+    setLocalStream(null);
+
+    remoteStream?.getTracks().forEach(track => track.stop());
+    setRemoteStream(null);
+
+    setCallStarted(false);
 
     navigation.replace('ScreenBottomTabs');
   };

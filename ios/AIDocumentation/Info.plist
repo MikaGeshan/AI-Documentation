@@ -2,103 +2,109 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-<key>NSCameraUsageDescription</key>
-<string>Camera permission description</string>
-<key>NSMicrophoneUsageDescription</key>
-<string>Microphone permission description</string>
-<key>LSApplicationQueriesSchemes</key>
-<array>
-  <string>fb</string>
-  <string>instagram</string>
-  <string>twitter</string>
-  <string>tiktoksharesdk</string>
-</array>
-<key>CFBundleURLTypes</key>
-<array>
-  <!-- Google Callback scheme -->
-  <dict>
-    <key>CFBundleURLName</key>
-    <string>com.aidocumentation</string>
-    <key>CFBundleURLSchemes</key>
-    <array>
-      <string>com.aidocumentation</string>
-    </array>
-  </dict>
+  <key>NSCameraUsageDescription</key>
+  <string>Camera permission is required for video calls.</string>
+  <key>NSMicrophoneUsageDescription</key>
+  <string>Microphone permission is required for voice and video calls.</string>
+  <key>LSApplicationQueriesSchemes</key>
+  <array>
+    <string>fb</string>
+    <string>instagram</string>
+    <string>twitter</string>
+    <string>tiktoksharesdk</string>
+    <string>google</string>
+  </array>
 
-  <!-- Google Sign-In URL scheme -->
-  <dict>
-    <key>CFBundleURLName</key>
-    <string>com.googleusercontent.apps.26723233307-7706ktadqcg17diik9v3cvsrdnlrbn90</string>
-    <key>CFBundleURLSchemes</key>
-    <array>
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>aidocumentation</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>aidocumentation</string>
+      </array>
+    </dict>
+
+    <!-- Google Sign-In redirect scheme -->
+    <dict>
+      <key>CFBundleURLName</key>
       <string>com.googleusercontent.apps.26723233307-7706ktadqcg17diik9v3cvsrdnlrbn90</string>
-    </array>
-  </dict>
-</array>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>com.googleusercontent.apps.26723233307-7706ktadqcg17diik9v3cvsrdnlrbn90</string>
+      </array>
+    </dict>
+  </array>
 
-	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
-	<key>CFBundleDisplayName</key>
-	<string>AIDocumentation</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>APPL</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<false/>
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-	</dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
-	<key>RCTNewArchEnabled</key>
-	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
-	<key>UIRequiredDeviceCapabilities</key>
-	<array>
-		<string>arm64</string>
-	</array>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
-	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
-	<key>LSSupportsOpeningDocumentsInPlace</key>
-<true/>
-<key>UISupportsDocumentBrowser</key>
-<true/>
-<key>UIFileSharingEnabled</key>
-<true/>
-<key>CFBundleDocumentTypes</key>
-<array>
+  <key>NSUserActivityTypes</key>
+  <array>
+    <string>NSUserActivityTypeBrowsingWeb</string>
+  </array>
+
+  <key>CFBundleDevelopmentRegion</key>
+  <string>en</string>
+  <key>CFBundleDisplayName</key>
+  <string>AIDocumentation</string>
+  <key>CFBundleExecutable</key>
+  <string>$(EXECUTABLE_NAME)</string>
+  <key>CFBundleIdentifier</key>
+  <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>$(PRODUCT_NAME)</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>$(MARKETING_VERSION)</string>
+  <key>CFBundleSignature</key>
+  <string>????</string>
+  <key>CFBundleVersion</key>
+  <string>$(CURRENT_PROJECT_VERSION)</string>
+  <key>LSRequiresIPhoneOS</key>
+  <true/>
+  <key>NSAppTransportSecurity</key>
   <dict>
-    <key>CFBundleTypeName</key>
-    <string>Any</string>
-    <key>LSItemContentTypes</key>
-    <array>
-      <string>public.data</string>
-    </array>
+    <key>NSAllowsArbitraryLoads</key>
+    <false/>
+    <key>NSAllowsLocalNetworking</key>
+    <true/>
   </dict>
-</array>
+  <key>NSLocationWhenInUseUsageDescription</key>
+  <string></string>
+  <key>RCTNewArchEnabled</key>
+  <true/>
+  <key>UILaunchStoryboardName</key>
+  <string>LaunchScreen</string>
+  <key>UIRequiredDeviceCapabilities</key>
+  <array>
+    <string>arm64</string>
+  </array>
+  <key>UISupportedInterfaceOrientations</key>
+  <array>
+    <string>UIInterfaceOrientationPortrait</string>
+    <string>UIInterfaceOrientationLandscapeLeft</string>
+    <string>UIInterfaceOrientationLandscapeRight</string>
+  </array>
+  <key>UIViewControllerBasedStatusBarAppearance</key>
+  <false/>
+  <key>LSSupportsOpeningDocumentsInPlace</key>
+  <true/>
+  <key>UISupportsDocumentBrowser</key>
+  <true/>
+  <key>UIFileSharingEnabled</key>
+  <true/>
+  <key>CFBundleDocumentTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleTypeName</key>
+      <string>Any</string>
+      <key>LSItemContentTypes</key>
+      <array>
+        <string>public.data</string>
+      </array>
+    </dict>
+  </array>
 </dict>
 </plist>

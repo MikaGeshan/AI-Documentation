@@ -43,6 +43,19 @@ const BottomTabNavigation = () => {
   const logout = SignInActions(state => state.logout);
   const navigation = useNavigation();
 
+  const handleContactPress = () => {
+    if (isAdmin) {
+      navigation.navigate('Receiver');
+    } else {
+      navigation.navigate('Caller');
+    }
+  };
+
+  const headerProps = {
+    onContactPress: handleContactPress,
+    onLogoutPress: logout,
+  };
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -56,17 +69,9 @@ const BottomTabNavigation = () => {
         options={{
           header: () => (
             <Header
+              {...headerProps}
               title="Mobile Documentation Explorer"
               description="Browse and search through our documentations"
-              onSettingsPress={() => {
-                if (isAdmin) {
-                  console.log(isAdmin);
-                  navigation.navigate('Receiver');
-                } else {
-                  navigation.navigate('Caller');
-                }
-              }}
-              onLogoutPress={logout}
             />
           ),
           tabBarIcon: DocumentsTabIcon,
@@ -78,16 +83,9 @@ const BottomTabNavigation = () => {
         options={{
           header: () => (
             <Header
+              {...headerProps}
               title="Mobile Documentation Chatbot"
               description="Powered by DeepSeek"
-              onSettingsPress={() => {
-                if (isAdmin) {
-                  navigation.navigate('Receiver');
-                } else {
-                  navigation.navigate('Caller');
-                }
-              }}
-              onLogoutPress={logout}
             />
           ),
           tabBarIcon: ChatTabIcon,
@@ -99,16 +97,9 @@ const BottomTabNavigation = () => {
         options={{
           header: () => (
             <Header
+              {...headerProps}
               title="Mobile Documentation Explorer"
               description="Feel Free to Explore the Available Documentation"
-              onSettingsPress={() => {
-                if (isAdmin) {
-                  navigation.navigate('Receiver');
-                } else {
-                  navigation.navigate('Caller');
-                }
-              }}
-              onLogoutPress={logout}
             />
           ),
           tabBarIcon: ExploreTabIcon,

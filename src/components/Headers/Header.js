@@ -43,19 +43,17 @@ const styles = StyleSheet.create({
   },
 });
 
-const Header = ({ title, description, onSettingsPress, onLogoutPress }) => {
+const Header = ({ title, description, onContactPress, onLogoutPress }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.row}>
-        <TouchableOpacity onPress={onSettingsPress}>
+        <TouchableOpacity onPress={onContactPress}>
           <Icon name="Headset" size={20} color="#000" />
         </TouchableOpacity>
-
         <View style={styles.textContainer}>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.description}>{description}</Text>
         </View>
-
         <TouchableOpacity onPress={onLogoutPress}>
           <Icon name="LogOut" size={20} color="#000" />
         </TouchableOpacity>
