@@ -6,6 +6,7 @@ import { initializeSocket, disconnectSocket } from '../../../App/Network';
 import SignInActions from '../../Authentication/Stores/SignInActions';
 import { CallerAction } from '../Stores/CallerAction';
 import CallLayout from '../../../components/Call/CallLayout';
+import Loader from '../../../components/Loaders/Loader';
 
 export default function CallerContainer() {
   const {
@@ -17,6 +18,8 @@ export default function CallerContainer() {
     setRemoteStream,
     setCallStarted,
     setMuteMic,
+    isLoading,
+    setIsLoading,
   } = CallerAction();
 
   const [socketReady, setSocketReady] = useState(false);
@@ -29,7 +32,7 @@ export default function CallerContainer() {
 
   useEffect(() => {
     let active = true;
-
+    setIsLoading(true);
     const setupSocket = async () => {
       const socket = await initializeSocket();
       if (!socket || !active) return;
@@ -39,6 +42,7 @@ export default function CallerContainer() {
       socket.on('connect', () => {
         console.log('[Socket] Connected:', socket.id);
         setSocketReady(true);
+        setIsLoading(false);
 
         if (user?.id && user?.role) {
           socket.emit('register', { id: user.id, role: user.role });
@@ -49,6 +53,7 @@ export default function CallerContainer() {
       socket.on('disconnect', () => {
         console.log('[Socket] Disconnected');
         setSocketReady(false);
+        setIsLoading(true);
       });
 
       socket.on('signal', async ({ data, fromUserId }) => {
@@ -204,15 +209,18 @@ export default function CallerContainer() {
   }
 
   return (
-    <CallLayout
-      localStream={localStream}
-      remoteStream={remoteStream}
-      callStarted={callStarted}
-      isMicOn={!muteMic}
-      onPressMic={mute}
-      onPressCall={startCall}
-      onPressEndCall={endCall}
-      role={user.role}
-    />
+    <>
+      <CallLayout
+        localStream={localStream}
+        remoteStream={remoteStream}
+        callStarted={callStarted}
+        isMicOn={!muteMic}
+        onPressMic={mute}
+        onPressCall={startCall}
+        onPressEndCall={endCall}
+        role={user.role}
+      />
+      <Loader visible={isLoading} />
+    </>
   );
 }
