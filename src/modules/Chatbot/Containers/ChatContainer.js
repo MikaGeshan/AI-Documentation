@@ -1,29 +1,35 @@
 import React, { useEffect } from 'react';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Fuse from 'fuse.js';
 
 import ChatComponent from '../Components/ChatComponent';
 import { ChatAction } from '../Stores/ChatAction';
 
 import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL } from '@env';
-import {
-  cutText,
-  detectMentionedApps,
-  getInitialGreeting,
-  greetingsAndListApp,
-} from '../../../App/Locale';
+import { cutText } from '../../../App/Locale';
 import SignInActions from '../../Authentication/Stores/SignInActions';
 import { getFolderContents } from '../../../App/Google';
 import Config from '../../../App/Network';
 
-const MAX_DOCS = 4;
+// const MAX_DOCS = 10;
 const CACHE_PREFIX = 'doc-cache-';
 const CACHE_TTL = 1000 * 60 * 60 * 24;
 
 const getCacheKey = fileId => `${CACHE_PREFIX}${fileId}`;
-
 const isCacheValid = cached =>
   cached?.timestamp && Date.now() - cached.timestamp < CACHE_TTL;
+
+const chunkText = (text, size = 1000, overlap = 200) => {
+  const chunks = [];
+  let start = 0;
+  while (start < text.length) {
+    const end = Math.min(start + size, text.length);
+    chunks.push(text.slice(start, end));
+    start += size - overlap;
+  }
+  return chunks;
+};
 
 const cacheDocument = async (fileId, data) => {
   await AsyncStorage.setItem(
@@ -55,47 +61,8 @@ const preloadAllDocuments = async () => {
   }
 };
 
-const isAppListQuery = userMessage => {
-  const lower = userMessage.toLowerCase();
-  return (
-    lower.includes('daftar aplikasi') ||
-    lower.includes('list aplikasi') ||
-    lower.includes('apa saja aplikasi') ||
-    lower.includes('dokumen yang tersedia')
-  );
-};
-
-const getAppListResponse = async userMessage => {
-  const allDocuments = await getFolderContents();
-  const subfolders = allDocuments?.subfolders || [];
-
-  if (subfolders.length === 0) {
-    return 'No Documentation about the application.';
-  }
-
-  const lowerMsg = userMessage.toLowerCase();
-  const folderGuess = subfolders.find(folder =>
-    lowerMsg.includes(folder.name.toLowerCase()),
-  );
-
-  if (folderGuess) {
-    const fileNames = folderGuess.files.map(f => f.name).filter(Boolean);
-    if (fileNames.length === 0) {
-      return `No Documents found in folder *${folderGuess.name}*.`;
-    }
-
-    return `Documents list in folder *${
-      folderGuess.name
-    }*:\n\n- ${fileNames.join('\n- ')}`;
-  }
-
-  return `List of documented applications:\n\n- ${subfolders
-    .map(f => f.name)
-    .join('\n- ')}`;
-};
-
+// Abort controller for DeepSeek API requests
 let controller = null;
-
 const createAbortController = () => (controller = new AbortController());
 const getAbortSignal = () =>
   controller?.signal || (controller = new AbortController()).signal;
@@ -110,30 +77,6 @@ const stageMessages = {
   reading: 'Reading contents and composing answers...',
 };
 
-const SYSTEM_PROMPT = (docs, userMessage) => `
-Berikut ini adalah bagian-bagian dari dokumentasi aplikasi yang relevan dengan pertanyaan user:
-
-${docs
-  .map(
-    doc => `### Dokumen: ${doc.title || 'Untitled'}
-Link: ${doc.url}
-
-${cutText(doc.content)}`,
-  )
-  .join('\n\n')}
-
----
-
-Pertanyaan user:
-"${userMessage}"
-
-Petunjuk untuk menjawab:
-- Jawablah *hanya berdasarkan informasi dari dokumen-dokumen di atas*.
-- Jika pertanyaan menyebut satu aplikasi, berikan jawaban yang **selengkap dan sedetail mungkin**.
-- Jika pertanyaan menyebut lebih dari satu aplikasi, buat perbandingan yang jelas.
-- Jangan menambahkan informasi dari luar dokumen.
-`;
-
 const ChatContainer = () => {
   const {
     messages,
@@ -146,11 +89,54 @@ const ChatContainer = () => {
   const { user } = SignInActions();
 
   useEffect(() => {
-    setMessages([
-      { id: 'init-ai-greeting', text: getInitialGreeting(), sender: 'ai' },
-    ]);
     preloadAllDocuments();
-  }, [setMessages]);
+    generateInitialGreeting();
+  }, []);
+
+  const generateInitialGreeting = async () => {
+    try {
+      createAbortController();
+      const { data } = await axios.post(
+        DEEPSEEK_URL,
+        {
+          model: DEEPSEEK_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Kamu adalah asisten dokumentasi teknis. Sambut pengguna secara singkat, ramah, dan profesional. Jangan sebut dokumen apa pun sekarang.',
+            },
+            {
+              role: 'user',
+              content: 'Berikan sapaan awal untuk memulai percakapan.',
+            },
+          ],
+          temperature: 0.7,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          },
+          signal: getAbortSignal(),
+        },
+      );
+
+      const greeting =
+        data?.choices?.[0]?.message?.content?.trim() ||
+        'Halo! Saya siap membantu Anda dengan dokumentasi.';
+      setMessages([{ id: 'init-ai-greeting', text: greeting, sender: 'ai' }]);
+    } catch (err) {
+      console.error('Failed to fetch greeting:', err.message);
+      setMessages([
+        {
+          id: 'init-ai-greeting',
+          text: 'Halo! Saya siap membantu Anda dengan dokumentasi.',
+          sender: 'ai',
+        },
+      ]);
+    }
+  };
 
   const showStageMessage = stage => {
     startStage(stage);
@@ -186,7 +172,13 @@ const ChatContainer = () => {
         url: `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
       };
     } catch (error) {
-      console.error('Document conversion failed:', error.message);
+      console.error('Document conversion failed:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response?.data,
+        status: error.response?.status,
+        headers: error.response?.headers,
+      });
       return null;
     }
   };
@@ -201,116 +193,211 @@ const ChatContainer = () => {
 
     try {
       showStageMessage('fetching');
-      let finalAnswer = '';
+      const documents = await getFolderContents();
+      const subfolders = documents?.subfolders || [];
+      const allDocs = subfolders.flatMap(folder =>
+        folder.files.map(file => ({
+          ...file,
+          folderName: folder.name,
+          folderLink: folder.webViewLink,
+        })),
+      );
 
-      if (isAppListQuery(userText)) {
-        finalAnswer = await getAppListResponse(userText);
-      } else {
-        const earlyResponse = await greetingsAndListApp(userText.trim());
-        if (earlyResponse) {
-          finalAnswer = earlyResponse;
-        } else {
-          const documents = await getFolderContents();
-          const subfolders = documents?.subfolders || [];
+      if (allDocs.length === 0) {
+        clearStageMessage();
+        return addMessage({
+          id: `ai-${Date.now()}`,
+          text: 'Saya tidak menemukan dokumen yang relevan.',
+          sender: 'ai',
+        });
+      }
 
-          if (isAppListQuery(userText)) {
-            if (subfolders.length === 0) {
-              finalAnswer = 'No documented applications available.';
-            } else {
-              const appList = subfolders.map(f => f.name);
-              finalAnswer = `List of documented applications:\n\n- ${appList.join(
-                '\n- ',
-              )}`;
-            }
-          } else {
-            const mentionedApps = detectMentionedApps(
-              userText,
-              subfolders.map(f => f.name),
-            );
+      showStageMessage('parsing');
 
-            if (mentionedApps.length === 0) {
-              finalAnswer = 'No applications found based on your question.';
-            } else {
-              showStageMessage('parsing');
+      // Ask AI which document is relevant
+      createAbortController();
+      const { data: selectDocument } = await axios.post(
+        DEEPSEEK_URL,
+        {
+          model: DEEPSEEK_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content: `
+                    Kamu adalah asisten dokumentasi yang bertugas *hanya* untuk memilih dokumen atau folder
+                    yang relevan dari pertanyaan pengguna.
 
-              const matchedDocs = subfolders
-                .filter(folder =>
-                  mentionedApps.some(app =>
-                    folder.name.toLowerCase().includes(app.toLowerCase()),
-                  ),
-                )
-                .flatMap(folder =>
-                  folder.files.map(file => ({
-                    ...file,
-                    folderName: folder.name,
-                    folderLink: folder.webViewLink,
-                  })),
-                )
-                .slice(0, MAX_DOCS);
+                    Aturan:
+                    1. Jawablah dengan persis **nama dokumen** atau **nama folder** yang ada di daftar, tanpa tambahan kata lain.
+                    2. Jika ada kecocokan yang sangat jelas → jawab persis dengan nama dokumen/folder
+                    3. Jika tidak ada kecocokan yang sangat jelas, cari dokumen/folder yang paling mendekati dan jawab dengan nama dokumen/folder tersebut.
+                    4. Jika sama sekali tidak ada informasi yang relevan, jawab "UNKNOWN".
+                    5. Gunakan nama dokumen/folder secara persis sesuai yang tersedia (case-insensitive boleh).
+                    6. Hanya boleh mengembalikan **satu nama dokumen/folder** atau "UNKNOWN".
+                    `,
+            },
+            {
+              role: 'user',
+              content: `
+                      Pertanyaan: "${userText}"
 
-              if (matchedDocs.length === 0) {
-                finalAnswer = 'No documents matched your question.';
-              } else {
-                const docChunks = [];
-                for (const doc of matchedDocs) {
-                  if (!doc.id) continue;
+                      Berikut daftar dokumen dan folder yang tersedia:
+                      ${allDocs
+                        .map(doc => `- ${doc.name} (folder: ${doc.folderName})`)
+                        .join('\n')}
 
-                  const cached = await getCachedDocument(doc.id);
-                  if (cached) {
-                    docChunks.push(cached);
-                  } else {
-                    const converted = await convertDocument(doc.id);
-                    if (converted?.content) {
-                      await cacheDocument(doc.id, converted);
-                      docChunks.push(converted);
-                    }
-                  }
-                }
+                      Pilih satu nama dokumen/folder yang paling relevan dari daftar di atas.
+                      Jika tidak ada yang cocok → jawab "NULL".
+                      `,
+            },
+          ],
+          temperature: 0.0,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          },
+          signal: getAbortSignal(),
+        },
+      );
 
-                if (docChunks.length === 0) {
-                  finalAnswer = 'Gagal memproses isi dokumen.';
-                } else {
-                  showStageMessage('reading');
-                  const prompt = SYSTEM_PROMPT(docChunks, userText);
+      const selectDocName =
+        selectDocument?.choices?.[0]?.message?.content?.trim();
+      console.log('=== selected document name:', selectDocName);
 
-                  createAbortController();
-                  const { data } = await axios.post(
-                    DEEPSEEK_URL,
-                    {
-                      model: DEEPSEEK_MODEL,
-                      messages: [
-                        {
-                          role: 'system',
-                          content:
-                            'Kamu adalah asisten dokumentasi teknis yang cerdas...',
-                        },
-                        { role: 'user', content: prompt },
-                      ],
-                      temperature: 0.3,
-                    },
-                    {
-                      headers: {
-                        'Content-Type': 'application/json',
-                        Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-                      },
-                      signal: getAbortSignal(),
-                    },
-                  );
+      // Try to match selectDocName with existing docs
+      let selectedDocs = [];
+      if (selectDocName && selectDocName !== 'UNKNOWN') {
+        const fuseForNames = new Fuse(allDocs, {
+          keys: ['name', 'folderName'],
+          threshold: 0.4,
+        });
 
-                  finalAnswer =
-                    data?.choices?.[0]?.message?.content?.trim() ||
-                    'Tidak ada jawaban yang dihasilkan dari dokumen.';
-                }
-              }
+        const results = fuseForNames.search(selectDocName);
+        selectedDocs = results.map(r => r.item);
+
+        console.log('=== matched documents based on name:', selectedDocs);
+      }
+
+      // If no doc matched by name, fallback to chunk search
+      if (selectedDocs.length === 0) {
+        const chunksForSearch = [];
+        for (const doc of allDocs) {
+          let cached = await getCachedDocument(doc.id);
+          if (!cached) {
+            const converted = await convertDocument(doc.id);
+            if (converted?.content) {
+              await cacheDocument(doc.id, converted);
+              cached = converted;
             }
           }
+          if (cached?.content) {
+            const chunks = chunkText(cached.content);
+            chunks.forEach((chunk, idx) =>
+              chunksForSearch.push({
+                fileId: doc.id,
+                title: doc.name || cached.title,
+                folderName: doc.folderName,
+                chunk,
+                chunkIndex: idx,
+                url: cached.url,
+              }),
+            );
+          }
+        }
+
+        const fuse = new Fuse(chunksForSearch, {
+          includeScore: true,
+          threshold: 0.3,
+          ignoreLocation: true,
+          minMatchCharLength: 2,
+          keys: [{ name: 'chunk', weight: 0.5 }],
+        });
+
+        const results = fuse.search(userText);
+        const matchedChunks = results.map(r => r.item);
+
+        if (matchedChunks.length === 0) {
+          clearStageMessage();
+          return addMessage({
+            id: `ai-${Date.now()}`,
+            text: 'Saya tidak menemukan informasi yang relevan.',
+            sender: 'ai',
+          });
+        }
+
+        selectedDocs = [
+          ...new Map(matchedChunks.map(c => [c.fileId, c])).values(),
+        ];
+      }
+
+      // Read  chunks from selectedDocs
+      showStageMessage('reading');
+      let fullContext = '';
+      for (const doc of selectedDocs) {
+        let cached = await getCachedDocument(doc.id);
+        if (!cached) {
+          const converted = await convertDocument(doc.id);
+          if (converted?.content) {
+            await cacheDocument(doc.id, converted);
+            cached = converted;
+          }
+        }
+        if (cached?.content) {
+          fullContext += `\n---\nDokumen: ${doc.name}\nFolder: ${doc.folderName}\n\n${cached.content}`;
         }
       }
 
+      // Build  system prompt
+      const SYSTEM_PROMPT = `
+      Kamu adalah asisten dokumentasi teknis yang ramah, profesional, dan akurat.
+
+      Tugasmu:
+      1. Gunakan hanya informasi dari konteks yang ditanyakan di bawah ini untuk menjawab.
+      2. Jika informasi tidak ditemukan dalam konteks, jawab secara sopan:
+        "Saya tidak menemukan informasi yang relevan di dokumentasi."
+      3. Jangan menebak atau membuat informasi baru.
+      4. Jika ada langkah-langkah, berikan secara runtut dan jelas.
+      5. Jika relevan, sebutkan nama dokumen atau folder sebagai referensi.
+      6. Jawaban harus ringkas, jelas, dan mudah dipahami.
+
+      Konteks (potongan dokumen, judul, dan folder):
+      ${cutText(fullContext)}
+
+      Pertanyaan Pengguna:
+      "${userText}"
+
+      Berikan jawaban yang paling sesuai berdasarkan konteks di atas.
+      `;
+
+      createAbortController();
+      const { data } = await axios.post(
+        DEEPSEEK_URL,
+        {
+          model: DEEPSEEK_MODEL,
+          messages: [{ role: 'system', content: SYSTEM_PROMPT }],
+          temperature: 0.3,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+          },
+          signal: getAbortSignal(),
+        },
+      );
+
       clearStageMessage();
-      addMessage({ id: `ai-${Date.now()}`, text: finalAnswer, sender: 'ai' });
+      addMessage({
+        id: `ai-${Date.now()}`,
+        text:
+          data?.choices?.[0]?.message?.content?.trim() ||
+          'Saya tidak menemukan jawaban yang relevan.',
+        sender: 'ai',
+      });
     } catch (err) {
-      console.error('ChatContainer error:', err.message);
+      console.error('=== RAG error:', err.message);
       clearStageMessage();
       addMessage({
         id: `ai-${Date.now()}`,
