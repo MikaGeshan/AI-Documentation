@@ -12,6 +12,7 @@ import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 import Config from '../../../App/Network';
 import { useNavigation } from '@react-navigation/native';
 import Loader from '../../../components/Loaders/Loader';
+import { getDriveSubfolders } from '../../../App/Google';
 
 const DocumentsContainer = () => {
   const {
@@ -83,40 +84,6 @@ const DocumentsContainer = () => {
     return () => clearTimeout(timer);
   }, [setShowError, showError]);
 
-  const getFolderContents = async () => {
-    try {
-      const url = `${Config.API_URL}/api/drive-contents`;
-      console.log('Fetching folder contents from:', url);
-
-      const response = await axios.get(url);
-      const data = response.data;
-
-      const mapSubFolders = {
-        subfolders: data.subfolders.map(sub => ({
-          id: sub.id,
-          name: sub.name,
-          webViewLink: sub.webViewLink,
-          files: sub.files.map(file => ({
-            ...file,
-            downloadUrl:
-              file.mimeType === 'application/vnd.google-apps.document'
-                ? file.webViewLink
-                : `https://drive.google.com/uc?id=${file.id}&export=download`,
-          })),
-        })),
-      };
-
-      console.log(mapSubFolders);
-      return mapSubFolders;
-    } catch (error) {
-      console.error(
-        'Failed to fetch drive contents',
-        error?.response?.data || error.message,
-      );
-      return null;
-    }
-  };
-
   const formatDocName = name => {
     if (!name) return '(Untitled)';
     return name
@@ -163,7 +130,7 @@ const DocumentsContainer = () => {
   const onRefresh = async () => {
     try {
       setRefreshing(true);
-      const data = await getFolderContents();
+      const data = await getDriveSubfolders();
       if (data) {
         await AsyncStorage.setItem('doc-folder-map', JSON.stringify(data));
         await loadFolders();

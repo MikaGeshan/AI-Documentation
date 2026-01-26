@@ -125,7 +125,6 @@ const DocumentsComponent = ({
             {renderFolders()}
           </ScrollView>
         )}
-
         <Option
           visible={showOption}
           onClose={() => setShowOption(false)}

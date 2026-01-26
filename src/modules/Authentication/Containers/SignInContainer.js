@@ -81,20 +81,23 @@ const SignInContainer = () => {
     try {
       const payload = createLoginPayload();
       const response = await axios.post(
-        `${Config.API_URL}/api/login`,
+        `${Config.API_URL}/auth/login`,
         payload,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-        },
       );
       handleSuccessfulLogin(response.data);
+      healthCheck();
     } catch (error) {
       handleLoginError(error.response?.data);
     } finally {
       setIsLoading(false);
+    }
+  };
+  const healthCheck = async () => {
+    try {
+      const response = await axios.get(`${Config.API_URL}/health`);
+      console.log('API Health Check:', response.data);
+    } catch (error) {
+      console.error('API Health Check Failed:', error);
     }
   };
 
@@ -124,6 +127,7 @@ const SignInContainer = () => {
           message="Login successful!"
           visible={true}
           onHide={() => {
+            healthCheck();
             setShowSuccessDialog(false);
             setTimeout(() => navigation.replace('ScreenBottomTabs'), 3000);
           }}
@@ -134,7 +138,7 @@ const SignInContainer = () => {
         <ErrorDialog
           message="Login failed. Please check your credentials."
           visible={true}
-          onHide={(() => setShowErrorDialog(false), 3000)}
+          onHide={((() => setShowErrorDialog(false), 3000), healthCheck())}
         />
       )}
 

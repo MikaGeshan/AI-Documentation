@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID } from '@env';
+import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, FOLDER_ID } from '@env';
 import axios from 'axios';
 import Config from './Network';
 
@@ -67,34 +67,20 @@ export const signInWithGoogle = async ({ handleSuccessfulLogin }) => {
 };
 
 // Google Drive
-export const getFolderContents = async () => {
+export const getDriveSubfolders = async () => {
   try {
-    const url = `${Config.API_URL}/api/drive-contents`;
-    console.log('[GoogleDrive] Fetching folder contents from:', url);
+    const res = await axios.get(
+      `${Config.API_URL}/drive/folders?folderId=${FOLDER_ID}`,
+    );
 
-    const response = await axios.get(url);
-    const data = response.data;
+    const subfolders = res.data ?? [];
 
-    const mapped = {
-      subfolders: data.subfolders.map(sub => ({
-        id: sub.id,
-        name: sub.name,
-        webViewLink: sub.webViewLink,
-        files: sub.files.map(file => ({
-          ...file,
-          downloadUrl:
-            file.mimeType === 'application/vnd.google-apps.document'
-              ? file.webViewLink
-              : `https://drive.google.com/uc?id=${file.id}&export=download`,
-        })),
-      })),
-    };
+    console.log('=== subfolders:', subfolders);
 
-    console.log('[GoogleDrive] Mapped folder contents:', mapped);
-    return mapped;
+    return { subfolders };
   } catch (error) {
     console.error(
-      '[GoogleDrive] Failed to fetch drive contents:',
+      'Failed to fetch drive folders',
       error?.response?.data || error.message,
     );
     return null;

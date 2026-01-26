@@ -1,24 +1,202 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Fuse from 'fuse.js';
 
 import ChatComponent from '../Components/ChatComponent';
 import { ChatAction } from '../Stores/ChatAction';
-
-import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL } from '@env';
-import { cutText } from '../../../App/Locale';
 import SignInActions from '../../Authentication/Stores/SignInActions';
-import { getFolderContents } from '../../../App/Google';
+import { getDriveSubfolders } from '../../../App/Google';
+import { cutText } from '../../../App/Locale';
 import Config from '../../../App/Network';
+import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL } from '@env';
 
-// const MAX_DOCS = 10;
 const CACHE_PREFIX = 'doc-cache-';
+const CACHE_INDEX_KEY = 'doc-cache-index';
 const CACHE_TTL = 1000 * 60 * 60 * 24;
+const CACHE_MAX_ITEMS = 40;
+const REQUEST_RETRY = 1;
+const CONVERT_TIMEOUT_MS = 60_000;
 
-const getCacheKey = fileId => `${CACHE_PREFIX}${fileId}`;
+const log = (...args) => {
+  if (typeof __DEV__ !== 'undefined' ? __DEV__ : true)
+    console.log('[ChatContainer]', ...args);
+};
+
+const getCacheKey = id => `${CACHE_PREFIX}${id}`;
+const now = () => Date.now();
+
 const isCacheValid = cached =>
-  cached?.timestamp && Date.now() - cached.timestamp < CACHE_TTL;
+  cached && cached.timestamp && now() - cached.timestamp < CACHE_TTL;
+
+const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+const withRetries = async (fn, attempts = REQUEST_RETRY) => {
+  let lastErr;
+  for (let i = 0; i <= attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      log(`attempt ${i + 1} failed:`, err?.message || err);
+      if (i < attempts) await sleep(300 * (i + 1));
+    }
+  }
+  throw lastErr;
+};
+
+const createAbortController = () => new AbortController();
+
+const readCacheIndex = async () => {
+  try {
+    const raw = await AsyncStorage.getItem(CACHE_INDEX_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (err) {
+    log('readCacheIndex error', err.message);
+    return [];
+  }
+};
+
+const writeCacheIndex = async idx => {
+  try {
+    await AsyncStorage.setItem(CACHE_INDEX_KEY, JSON.stringify(idx));
+  } catch (err) {
+    log('writeCacheIndex error', err.message);
+  }
+};
+
+const touchCacheIndex = async fileId => {
+  const idx = await readCacheIndex();
+  const filtered = idx.filter(e => e.id !== fileId);
+  filtered.unshift({ id: fileId, timestamp: now() });
+  const trimmed = filtered.slice(0, CACHE_MAX_ITEMS);
+  await writeCacheIndex(trimmed);
+  const toDelete = idx
+    .map(e => e.id)
+    .filter(id => !trimmed.find(t => t.id === id));
+  try {
+    await Promise.all(
+      toDelete.map(id => AsyncStorage.removeItem(getCacheKey(id))),
+    );
+    if (toDelete.length) log('Evicted cache items:', toDelete);
+  } catch (e) {
+    log('eviction error', e.message);
+  }
+};
+
+const cacheDocument = async (fileId, data) => {
+  try {
+    await AsyncStorage.setItem(
+      getCacheKey(fileId),
+      JSON.stringify({ ...data, timestamp: now() }),
+    );
+    await touchCacheIndex(fileId);
+  } catch (err) {
+    log('cacheDocument error', err.message);
+  }
+};
+
+const getCachedDocument = async fileId => {
+  try {
+    const raw = await AsyncStorage.getItem(getCacheKey(fileId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!isCacheValid(parsed)) return null;
+    touchCacheIndex(fileId).catch(() => {});
+    return parsed;
+  } catch (err) {
+    log('getCachedDocument error', err.message);
+    return null;
+  }
+};
+
+const convertDocument = async (fileId, email, signal) => {
+  const doConvert = async () => {
+    const source = axios.CancelToken.source();
+    const timeout = setTimeout(
+      () => source.cancel('convert-docs timeout'),
+      CONVERT_TIMEOUT_MS,
+    );
+
+    try {
+      const resp = await axios.post(
+        `${Config.API_URL.replace(/\/$/, '')}/api/convert-docs`,
+        { file_id: fileId, email },
+        {
+          headers: { 'Content-Type': 'application/json' },
+          cancelToken: source.token,
+          signal,
+        },
+      );
+
+      clearTimeout(timeout);
+
+      const data = resp?.data;
+      if (!data) throw new Error('No response body from convert-docs');
+      if (data?.error) throw new Error(data.error);
+      if (!data?.text && !data?.content)
+        throw new Error('convert-docs missing text/content');
+
+      const text = data.text ?? data.content;
+      const result = {
+        fileId,
+        title: data.title || data.name || 'Untitled',
+        content: text,
+        url:
+          data.url ||
+          `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+      };
+
+      await cacheDocument(fileId, result);
+      return result;
+    } catch (err) {
+      clearTimeout(timeout);
+      if (axios.isCancel(err))
+        throw new Error(`convert-docs cancelled: ${err.message}`);
+      throw err;
+    }
+  };
+
+  return withRetries(() => doConvert(), 1);
+};
+
+const callDeepSeek = async ({ messages, temperature = 0.4, signal } = {}) => {
+  return withRetries(async () => {
+    const controller = createAbortController();
+    const fetchSignal = signal || controller.signal;
+
+    const resp = await axios.post(
+      DEEPSEEK_URL,
+      { model: DEEPSEEK_MODEL, messages, temperature },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+        },
+        signal: fetchSignal,
+      },
+    );
+
+    const data = resp?.data;
+    if (!data) throw new Error('Empty response from DeepSeek');
+
+    if (Array.isArray(data.choices) && data.choices[0]?.message?.content) {
+      return data;
+    }
+
+    if (typeof data.output_text === 'string') {
+      return { choices: [{ message: { content: data.output_text } }] };
+    }
+
+    if (typeof data.result === 'string') {
+      return { choices: [{ message: { content: data.result } }] };
+    }
+
+    const fallback = JSON.stringify(data).slice(0, 2000);
+    return { choices: [{ message: { content: fallback } }] };
+  }, 2);
+};
 
 const chunkText = (text, size = 1000, overlap = 200) => {
   const chunks = [];
@@ -31,50 +209,184 @@ const chunkText = (text, size = 1000, overlap = 200) => {
   return chunks;
 };
 
-const cacheDocument = async (fileId, data) => {
-  await AsyncStorage.setItem(
-    getCacheKey(fileId),
-    JSON.stringify({ ...data, timestamp: Date.now() }),
-  );
-};
-
-const getCachedDocument = async fileId => {
-  const cached = await AsyncStorage.getItem(getCacheKey(fileId));
-  if (!cached) return null;
-  const parsed = JSON.parse(cached);
-  return isCacheValid(parsed) ? parsed : null;
-};
-
-const preloadAllDocuments = async () => {
+const selectDocumentWithLLM = async (userText, allDocs, signal) => {
   try {
-    const folderData = await getFolderContents();
-    if (!folderData?.subfolders) return;
+    const list = allDocs
+      .map(doc => `- ${doc.name} (folder: ${doc.folderName})`)
+      .join('\n');
+    const data = await callDeepSeek({
+      temperature: 0.0,
+      messages: [
+        {
+          role: 'system',
+          content: `Kamu adalah asisten pemilih dokumen. Jawab hanya nama dokumen/folder dari daftar di bawah atau "UNKNOWN".`,
+        },
+        {
+          role: 'user',
+          content: `Pertanyaan: "${userText}"\n\nDaftar:\n${list}`,
+        },
+      ],
+      signal,
+    });
 
-    const folderMap = Object.fromEntries(
-      folderData.subfolders.map(subfolder => [subfolder.name, subfolder.files]),
-    );
-
-    await AsyncStorage.setItem('doc-folder-map', JSON.stringify(folderMap));
-    console.log('Documents cached successfully');
+    const content = data?.choices?.[0]?.message?.content?.trim();
+    return content || 'UNKNOWN';
   } catch (err) {
-    console.error('Failed to preload documents:', err);
+    log('selectDocumentWithLLM error', err.message);
+    return 'UNKNOWN';
   }
 };
 
-// Abort controller for DeepSeek API requests
-let controller = null;
-const createAbortController = () => (controller = new AbortController());
-const getAbortSignal = () =>
-  controller?.signal || (controller = new AbortController()).signal;
-export const abortDeepSeekRequest = () => {
-  controller?.abort();
-  console.log('[DeepSeek] Request aborted.');
+const retrieveRelevantDocs = async (userText, allDocs, userEmail, signal) => {
+  const selectedName = await selectDocumentWithLLM(userText, allDocs, signal);
+  console.log('selectedName', selectedName);
+
+  let match = null;
+
+  if (selectedName && selectedName !== 'UNKNOWN') {
+    const fuse = new Fuse(allDocs, {
+      keys: ['folderName', 'name'],
+      threshold: 0.3,
+    });
+
+    const results = fuse.search(selectedName);
+
+    match = results.find(
+      r => r.item.folderName?.toLowerCase() === selectedName.toLowerCase(),
+    )?.item;
+
+    if (!match) {
+      match = results.find(
+        r => r.item.name?.toLowerCase() === selectedName.toLowerCase(),
+      )?.item;
+    }
+
+    if (!match) {
+      match = results?.[0]?.item;
+    }
+
+    console.log('LLM matched:', match);
+
+    if (match) {
+      console.log('===match found', match);
+      let cached = await getCachedDocument(match.id);
+      if (!cached) cached = await convertDocument(match.id, userEmail, signal);
+      if (!cached?.content) return [];
+
+      const chunks = chunkText(cached.content);
+      return [
+        {
+          fileId: match.id,
+          title: match.name,
+          folderName: match.folderName,
+          chunks,
+        },
+      ];
+    }
+  }
+
+  console.log('Fallback: fuzzy search across all docs…');
+
+  const chunksForSearch = [];
+  for (const doc of allDocs) {
+    let cached = await getCachedDocument(doc.id);
+    if (!cached) {
+      try {
+        cached = await convertDocument(doc.id, userEmail, signal);
+      } catch (e) {
+        log('convertDocument failed for', doc.id, e.message);
+      }
+    }
+    if (!cached?.content) continue;
+
+    const chunks = chunkText(cached.content);
+    chunks.forEach((chunk, i) =>
+      chunksForSearch.push({
+        fileId: doc.id,
+        title: doc.name,
+        folderName: doc.folderName,
+        chunk,
+        index: i,
+      }),
+    );
+  }
+
+  const fuse = new Fuse(chunksForSearch, {
+    includeScore: true,
+    threshold: 0.35,
+    keys: ['chunk'],
+  });
+
+  const results = fuse
+    .search(userText)
+    .slice(0, 10)
+    .map(r => r.item);
+
+  return [...new Map(results.map(r => [r.fileId, r])).values()];
 };
 
-const stageMessages = {
-  fetching: 'Listing Folders and Documents...',
-  parsing: 'Processing folder contents...',
-  reading: 'Reading contents and composing answers...',
+const summarizeDocuments = async (
+  relevantDocs,
+  userText,
+  userEmail,
+  signal,
+) => {
+  const summaries = [];
+
+  for (const doc of relevantDocs) {
+    let cached = await getCachedDocument(doc.id);
+    if (!cached) {
+      try {
+        cached = await convertDocument(doc.id, userEmail, signal);
+      } catch (e) {
+        log('convertDocument while summarizing failed', doc.id, e.message);
+      }
+    }
+    if (!cached?.content) continue;
+
+    const prompt = `Kamu adalah asisten ringkasan dokumen teknis. Tugas: berikan ringkasan singkat dan fokus pada informasi yang relevan terhadap pertanyaan pengguna.\n\nFormat keluaran:\n- Judul Dokumen: ...\n- Ringkasan Relevan: ...`;
+
+    const data = await callDeepSeek({
+      temperature: 0.2,
+      messages: [
+        { role: 'system', content: prompt },
+        {
+          role: 'user',
+          content: `Pertanyaan pengguna: "${userText}"\n\nIsi dokumen:\n${cutText(
+            cached.content,
+            2000,
+          )}`,
+        },
+      ],
+      signal,
+    });
+
+    const summary = data?.choices?.[0]?.message?.content?.trim();
+    if (summary) {
+      summaries.push({
+        fileId: doc.fileId || doc.id,
+        title: doc.title || doc.name,
+        folder: doc.folderName,
+        summary,
+      });
+    }
+  }
+
+  return summaries;
+};
+
+const compareSummaries = async (summaries, userText, signal) => {
+  const combined = summaries
+    .map(s => `📄 ${s.title} (Folder: ${s.folder})\n${s.summary}\n---`)
+    .join('\n\n');
+  const comparisonPrompt = `Kamu adalah analis dokumen cerdas.\n\nTugas: 1) Bandingkan isi antar dokumen (kesamaan, perbedaan, kontradiksi). 2) Berikan jawaban akhir yang akurat untuk pertanyaan pengguna. 3) Sertakan referensi ringan seperti \"berdasarkan dokumen X\".\n\nPertanyaan pengguna: "${userText}"\n\nRingkasan dokumen:\n${combined}`;
+
+  const data = await callDeepSeek({
+    temperature: 0.35,
+    messages: [{ role: 'system', content: comparisonPrompt }],
+    signal,
+  });
+  return data?.choices?.[0]?.message?.content?.trim();
 };
 
 const ChatContainer = () => {
@@ -87,124 +399,93 @@ const ChatContainer = () => {
     loadingMessage,
   } = ChatAction();
   const { user } = SignInActions();
+  const abortControllerRef = useRef(null);
 
-  useEffect(() => {
-    preloadAllDocuments();
-    generateInitialGreeting();
-  }, []);
-
-  const generateInitialGreeting = async () => {
+  const preloadAllDocuments = async () => {
     try {
-      createAbortController();
-      const { data } = await axios.post(
-        DEEPSEEK_URL,
-        {
-          model: DEEPSEEK_MODEL,
-          messages: [
-            {
-              role: 'system',
-              content:
-                'Kamu adalah asisten dokumentasi teknis. Sambut pengguna secara singkat, ramah, dan profesional. Jangan sebut dokumen apa pun sekarang.',
-            },
-            {
-              role: 'user',
-              content: 'Berikan sapaan awal untuk memulai percakapan.',
-            },
-          ],
-          temperature: 0.7,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-          },
-          signal: getAbortSignal(),
-        },
+      const folderData = await getDriveSubfolders();
+      if (!folderData?.subfolders) return;
+
+      const folderMap = Object.fromEntries(
+        folderData.subfolders.map(subfolder => [
+          subfolder.name,
+          subfolder.files,
+        ]),
       );
 
-      const greeting =
-        data?.choices?.[0]?.message?.content?.trim() ||
-        'Halo! Saya siap membantu Anda dengan dokumentasi.';
-      setMessages([{ id: 'init-ai-greeting', text: greeting, sender: 'ai' }]);
+      await AsyncStorage.setItem('doc-folder-map', JSON.stringify(folderMap));
+      console.log('Documents cached successfully');
     } catch (err) {
-      console.error('Failed to fetch greeting:', err.message);
-      setMessages([
-        {
-          id: 'init-ai-greeting',
-          text: 'Halo! Saya siap membantu Anda dengan dokumentasi.',
-          sender: 'ai',
-        },
-      ]);
+      console.error('Failed to preload documents:', err);
     }
   };
 
-  const showStageMessage = stage => {
-    startStage(stage);
-    addMessage({
-      id: `stage-${stage}`,
-      text: stageMessages[stage] || `${stage}...`,
-      sender: 'ai',
-      isStage: true,
-    });
-  };
+  useEffect(() => {
+    setMessages([
+      {
+        id: 'init-ai-greeting',
+        text: 'Halo! Saya siap membantu Anda dengan dokumentasi.',
+        sender: 'ai',
+      },
+    ]);
 
-  const clearStageMessage = () => {
+    const t = setTimeout(
+      () => preloadAllDocuments().catch(e => log('preload error', e.message)),
+      300,
+    );
+
+    return () => {
+      clearTimeout(t);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, []);
+
+  const showStage = text => {
+    startStage(text);
+    addMessage({ id: `stage-${text}`, text, sender: 'ai', isStage: true });
+  };
+  const clearStage = () => {
     resetStage();
-    setMessages(prev => prev.filter(msg => !msg.isStage));
-  };
-
-  const convertDocument = async fileId => {
-    try {
-      if (!fileId) throw new Error('Missing file ID');
-
-      const { data } = await axios.post(`${Config.API_URL}/api/convert-docs`, {
-        file_id: fileId,
-        email: user?.email || null,
-      });
-
-      if (data?.error) throw new Error(data.error);
-      if (!data?.text) throw new Error('Invalid response from backend');
-
-      return {
-        fileId,
-        title: data.title || 'Untitled',
-        content: data.text,
-        url: `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
-      };
-    } catch (error) {
-      console.error('Document conversion failed:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response?.data,
-        status: error.response?.status,
-        headers: error.response?.headers,
-      });
-      return null;
-    }
+    setMessages(prev => prev.filter(m => !m.isStage));
   };
 
   const handleSendMessage = async userText => {
-    const userMessage = {
-      id: Date.now().toString(),
-      text: userText,
-      sender: 'user',
-    };
-    addMessage(userMessage);
+    addMessage({ id: Date.now().toString(), text: userText, sender: 'user' });
+
+    const controller = createAbortController();
+    abortControllerRef.current = controller;
+    const signal = controller.signal;
 
     try {
-      showStageMessage('fetching');
-      const documents = await getFolderContents();
-      const subfolders = documents?.subfolders || [];
-      const allDocs = subfolders.flatMap(folder =>
-        folder.files.map(file => ({
-          ...file,
-          folderName: folder.name,
-          folderLink: folder.webViewLink,
-        })),
-      );
+      showStage('Mencari dokumen relevan...');
+
+      const folderData = await withRetries(() => getDriveSubfolders());
+      const allDocs =
+        folderData?.subfolders?.flatMap(folder =>
+          folder.files.map(file => ({
+            ...file,
+            folderName: folder.name,
+            folderLink: folder.webViewLink,
+          })),
+        ) || [];
 
       if (allDocs.length === 0) {
-        clearStageMessage();
+        clearStage();
+        return addMessage({
+          id: `ai-${Date.now()}`,
+          text: 'Tidak ada dokumen yang tersedia.',
+          sender: 'ai',
+        });
+      }
+
+      const relevantDocs = await retrieveRelevantDocs(
+        userText,
+        allDocs,
+        user?.email || null,
+        signal,
+      );
+      if (!relevantDocs || relevantDocs.length === 0) {
+        clearStage();
         return addMessage({
           id: `ai-${Date.now()}`,
           text: 'Saya tidak menemukan dokumen yang relevan.',
@@ -212,198 +493,59 @@ const ChatContainer = () => {
         });
       }
 
-      showStageMessage('parsing');
-
-      // Ask AI which document is relevant
-      createAbortController();
-      const { data: selectDocument } = await axios.post(
-        DEEPSEEK_URL,
-        {
-          model: DEEPSEEK_MODEL,
-          messages: [
-            {
-              role: 'system',
-              content: `
-                    Kamu adalah asisten dokumentasi yang bertugas *hanya* untuk memilih dokumen atau folder
-                    yang relevan dari pertanyaan pengguna.
-
-                    Aturan:
-                    1. Jawablah dengan persis **nama dokumen** atau **nama folder** yang ada di daftar, tanpa tambahan kata lain.
-                    2. Jika ada kecocokan yang sangat jelas → jawab persis dengan nama dokumen/folder
-                    3. Jika tidak ada kecocokan yang sangat jelas, cari dokumen/folder yang paling mendekati dan jawab dengan nama dokumen/folder tersebut.
-                    4. Jika sama sekali tidak ada informasi yang relevan, jawab "UNKNOWN".
-                    5. Gunakan nama dokumen/folder secara persis sesuai yang tersedia (case-insensitive boleh).
-                    6. Hanya boleh mengembalikan **satu nama dokumen/folder** atau "UNKNOWN".
-                    `,
-            },
-            {
-              role: 'user',
-              content: `
-                      Pertanyaan: "${userText}"
-
-                      Berikut daftar dokumen dan folder yang tersedia:
-                      ${allDocs
-                        .map(doc => `- ${doc.name} (folder: ${doc.folderName})`)
-                        .join('\n')}
-
-                      Pilih satu nama dokumen/folder yang paling relevan dari daftar di atas.
-                      Jika tidak ada yang cocok → jawab "NULL".
-                      `,
-            },
-          ],
-          temperature: 0.0,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-          },
-          signal: getAbortSignal(),
-        },
-      );
-
-      const selectDocName =
-        selectDocument?.choices?.[0]?.message?.content?.trim();
-      console.log('=== selected document name:', selectDocName);
-
-      // Try to match selectDocName with existing docs
-      let selectedDocs = [];
-      if (selectDocName && selectDocName !== 'UNKNOWN') {
-        const fuseForNames = new Fuse(allDocs, {
-          keys: ['name', 'folderName'],
-          threshold: 0.4,
-        });
-
-        const results = fuseForNames.search(selectDocName);
-        selectedDocs = results.map(r => r.item);
-
-        console.log('=== matched documents based on name:', selectedDocs);
-      }
-
-      // If no doc matched by name, fallback to chunk search
-      if (selectedDocs.length === 0) {
-        const chunksForSearch = [];
-        for (const doc of allDocs) {
-          let cached = await getCachedDocument(doc.id);
-          if (!cached) {
-            const converted = await convertDocument(doc.id);
-            if (converted?.content) {
-              await cacheDocument(doc.id, converted);
-              cached = converted;
-            }
-          }
-          if (cached?.content) {
-            const chunks = chunkText(cached.content);
-            chunks.forEach((chunk, idx) =>
-              chunksForSearch.push({
-                fileId: doc.id,
-                title: doc.name || cached.title,
-                folderName: doc.folderName,
-                chunk,
-                chunkIndex: idx,
-                url: cached.url,
-              }),
-            );
-          }
-        }
-
-        const fuse = new Fuse(chunksForSearch, {
-          includeScore: true,
-          threshold: 0.3,
-          ignoreLocation: true,
-          minMatchCharLength: 2,
-          keys: [{ name: 'chunk', weight: 0.5 }],
-        });
-
-        const results = fuse.search(userText);
-        const matchedChunks = results.map(r => r.item);
-
-        if (matchedChunks.length === 0) {
-          clearStageMessage();
-          return addMessage({
-            id: `ai-${Date.now()}`,
-            text: 'Saya tidak menemukan informasi yang relevan.',
-            sender: 'ai',
-          });
-        }
-
-        selectedDocs = [
-          ...new Map(matchedChunks.map(c => [c.fileId, c])).values(),
-        ];
-      }
-
-      // Read  chunks from selectedDocs
-      showStageMessage('reading');
+      showStage('Membaca dokumen dan menyiapkan konteks...');
       let fullContext = '';
-      for (const doc of selectedDocs) {
-        let cached = await getCachedDocument(doc.id);
-        if (!cached) {
-          const converted = await convertDocument(doc.id);
-          if (converted?.content) {
-            await cacheDocument(doc.id, converted);
-            cached = converted;
-          }
-        }
-        if (cached?.content) {
-          fullContext += `\n---\nDokumen: ${doc.name}\nFolder: ${doc.folderName}\n\n${cached.content}`;
-        }
+      for (const doc of relevantDocs) {
+        const cached = await getCachedDocument(doc.id);
+        if (!cached?.content) continue;
+        fullContext += `\n---\nDokumen: ${doc.title || doc.name}\nFolder: ${
+          doc.folderName
+        }\n\n${cached.content}`;
       }
 
-      // Build  system prompt
-      const SYSTEM_PROMPT = `
-      Kamu adalah asisten dokumentasi teknis yang ramah, profesional, dan akurat.
-
-      Tugasmu:
-      1. Gunakan hanya informasi dari konteks yang ditanyakan di bawah ini untuk menjawab.
-      2. Jika informasi tidak ditemukan dalam konteks, jawab secara sopan:
-        "Saya tidak menemukan informasi yang relevan di dokumentasi."
-      3. Jangan menebak atau membuat informasi baru.
-      4. Jika ada langkah-langkah, berikan secara runtut dan jelas.
-      5. Jika relevan, sebutkan nama dokumen atau folder sebagai referensi.
-      6. Jawaban harus ringkas, jelas, dan mudah dipahami.
-
-      Konteks (potongan dokumen, judul, dan folder):
-      ${cutText(fullContext)}
-
-      Pertanyaan Pengguna:
-      "${userText}"
-
-      Berikan jawaban yang paling sesuai berdasarkan konteks di atas.
-      `;
-
-      createAbortController();
-      const { data } = await axios.post(
-        DEEPSEEK_URL,
-        {
-          model: DEEPSEEK_MODEL,
-          messages: [{ role: 'system', content: SYSTEM_PROMPT }],
-          temperature: 0.3,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
-          },
-          signal: getAbortSignal(),
-        },
+      showStage('Meringkas dokumen yang relevan...');
+      const summaries = await summarizeDocuments(
+        relevantDocs,
+        userText,
+        user?.email || null,
+        signal,
       );
+      if (!summaries || summaries.length === 0) {
+        clearStage();
+        return addMessage({
+          id: `ai-${Date.now()}`,
+          text: 'Tidak ada konten yang bisa diringkas dari dokumen relevan.',
+          sender: 'ai',
+        });
+      }
 
-      clearStageMessage();
+      showStage('Membandingkan hasil dan menyusun jawaban akhir...');
+      const finalAnswer = await compareSummaries(summaries, userText, signal);
+      clearStage();
+
       addMessage({
         id: `ai-${Date.now()}`,
         text:
-          data?.choices?.[0]?.message?.content?.trim() ||
-          'Saya tidak menemukan jawaban yang relevan.',
+          finalAnswer ||
+          'Saya tidak menemukan jawaban yang cukup relevan dari dokumen.',
         sender: 'ai',
       });
     } catch (err) {
-      console.error('=== RAG error:', err.message);
-      clearStageMessage();
+      log('handleSendMessage error', err.message);
+      clearStage();
+      const isAbort =
+        err?.name === 'CanceledError' ||
+        err?.message?.includes('cancel') ||
+        err?.code === 'ERR_CANCELED';
       addMessage({
         id: `ai-${Date.now()}`,
-        text: 'Terjadi kesalahan saat memproses permintaan Anda.',
+        text: isAbort
+          ? 'Permintaan dibatalkan.'
+          : 'Terjadi kesalahan saat memproses permintaan Anda.',
         sender: 'ai',
       });
+    } finally {
+      abortControllerRef.current = null;
     }
   };
 
@@ -412,7 +554,7 @@ const ChatContainer = () => {
       messages={messages}
       loadingMessage={loadingMessage}
       onSendMessage={handleSendMessage}
-      abortDeepSeekRequest={abortDeepSeekRequest}
+      abortDeepSeekRequest={() => abortControllerRef.current?.abort()}
     />
   );
 };

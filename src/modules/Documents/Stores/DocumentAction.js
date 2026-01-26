@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getFolderContents } from '../../../App/Google';
+import { getDriveSubfolders } from '../../../App/Google';
 
 export const DocumentAction = create(set => ({
   folders: [],
@@ -25,7 +25,7 @@ export const DocumentAction = create(set => ({
     set({ loading: true, initialLoadProgress: 0 });
 
     try {
-      const data = await getFolderContents();
+      const data = await getDriveSubfolders();
       console.log(data);
 
       if (!data?.subfolders) {

@@ -230,7 +230,7 @@ const SignInComponent = ({
                 disabled={isLoading}
               />
             </>
-            {Platform.OS === 'ios' && (
+            {/* {Platform.OS === 'ios' && (
               <>
                 <View style={styles.separatorContainer}>
                   <View style={styles.separatorLine} />
@@ -245,13 +245,13 @@ const SignInComponent = ({
                   />
                 </View>
               </>
-            )}
-            {Platform.OS === 'android' && (
-              <View style={styles.signUpContainer}>
-                <Text style={styles.signUpText}>Don't have an account?</Text>
-                <Hyperlink text="Register Now!" onPress={navigateToRegister} />
-              </View>
-            )}
+            )} */}
+            {/* {Platform.OS === 'android' && ( */}
+            <View style={styles.signUpContainer}>
+              <Text style={styles.signUpText}>Don't have an account?</Text>
+              <Hyperlink text="Register Now!" onPress={navigateToRegister} />
+            </View>
+            {/* )} */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

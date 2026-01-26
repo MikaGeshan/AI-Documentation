@@ -70,7 +70,7 @@ const RegisterContainer = () => {
 
     try {
       const response = await axios.post(
-        `${Config.API_URL}/api/register`,
+        `${Config.API_URL}/auth/register`,
         {
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
@@ -83,9 +83,12 @@ const RegisterContainer = () => {
           },
         },
       );
-
-      if (response?.status === 200 || response?.status === 201) {
-        setShowSuccessDialog(true);
+      console.log('=== axios response', response.data);
+      if (response?.status === 200) {
+        setTimeout(() => {
+          setShowSuccessDialog(true);
+          setIsLoading(false);
+        }, 500);
       } else {
         handleRegistrationError(response?.data);
       }
@@ -96,8 +99,6 @@ const RegisterContainer = () => {
         error.response?.data?.message ||
         'Network error. Please check your connection.';
       Alert.alert('Registration Failed', message);
-    } finally {
-      setIsLoading(false);
     }
   };
 

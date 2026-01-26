@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
 import { Icon } from '../Icons/Icon';
+import subfolder from '../../property/images/subfolder.png';
 
 const Accordion = ({ title, children, isExpanded, onToggle }) => {
   const [measured, setMeasured] = useState(false);
@@ -47,6 +48,15 @@ const Accordion = ({ title, children, isExpanded, onToggle }) => {
       alignItems: 'center',
       backgroundColor: '#E6E6E6',
     },
+    image: {
+      width: 25,
+      height: 25,
+    },
+    headerIconContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
     title: {
       fontSize: 16,
       fontWeight: 'bold',
@@ -66,7 +76,10 @@ const Accordion = ({ title, children, isExpanded, onToggle }) => {
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={onToggle} style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.headerIconContainer}>
+          <Image style={styles.image} source={subfolder} />
+          <Text style={styles.title}>{title}</Text>
+        </View>
         <Icon
           name={isExpanded ? 'ChevronUp' : 'ChevronDown'}
           color="#333"

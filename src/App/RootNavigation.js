@@ -20,8 +20,6 @@ import CreateExploreContainer from '../modules/Explore/Containers/CreateExploreC
 import ExploreContainer from '../modules/Explore/Containers/ExploreContainer';
 import EditExploreContainer from '../modules/Explore/Containers/EditExploreContainer';
 import ViewExploreListContainer from '../modules/Explore/Containers/ViewExploreListContainer';
-import CallerContainer from '../modules/Call/Containers/CallerContainer';
-import ReceiverContainer from '../modules/Call/Containers/ReceiverContainer';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -177,16 +175,6 @@ export const RootNavigation = () => {
           <Stack.Screen
             name="ViewDocument"
             component={ViewDocumentComponent}
-            options={{ headerShown: true }}
-          />
-          <Stack.Screen
-            name="Caller"
-            component={CallerContainer}
-            options={{ headerShown: true }}
-          />
-          <Stack.Screen
-            name="Receiver"
-            component={ReceiverContainer}
             options={{ headerShown: true }}
           />
         </>

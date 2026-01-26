@@ -1,4 +1,4 @@
-import { getFolderContents } from './Google';
+import { getDriveSubfolders } from './Google';
 
 const GREETING_KEYWORDS = [
   'halo',
@@ -48,7 +48,7 @@ export const isAppListQuery = userMessage => {
 };
 
 export const getAppList = async userMessage => {
-  const allDocuments = await getFolderContents();
+  const allDocuments = await getDriveSubfolders();
   const folderNames = [...new Set(allDocuments.map(doc => doc.folder))];
   const lowerMsg = userMessage.toLowerCase();
 
