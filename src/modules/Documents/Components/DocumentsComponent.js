@@ -70,7 +70,7 @@ const DocumentsComponent = ({
                   key={idx}
                   name={doc.name}
                   mimeType={doc.mimeType}
-                  lastUpdated={doc.modifiedTime}
+                  lastUpdated={folder.modifiedTime}
                   onPress={() => {
                     setSelectedDoc(doc);
                     setTimeout(() => setShowOption(true), 100);
@@ -79,7 +79,7 @@ const DocumentsComponent = ({
               </View>
             ))
           ) : (
-            <Text style={styles.noItemText}>(No documents)</Text>
+            <Text style={styles.noItemText}>(No Files)</Text>
           )}
         </Accordion>
       );

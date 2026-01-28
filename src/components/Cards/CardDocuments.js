@@ -64,7 +64,7 @@ const CardDocuments = ({
       alignItems: 'center',
     },
 
-    actionWrapper: {
+    actionButton: {
       width: 32,
       height: 32,
       justifyContent: 'center',
@@ -80,7 +80,7 @@ const CardDocuments = ({
   const FileIcon = mimeType === 'application/pdf' ? PdfIcon : DocsIcon;
 
   return (
-    <TouchableOpacity style={styles.buttonContainer} activeOpacity={0.7}>
+    <View style={styles.buttonContainer} activeOpacity={0.7}>
       <View style={styles.container}>
         <View style={styles.leftSection}>
           <View style={styles.fileIcon}>
@@ -92,14 +92,14 @@ const CardDocuments = ({
               {name}
             </Text>
             <Text style={styles.lastUpdated} numberOfLines={1}>
-              {new Date(lastUpdated).toLocaleDateString()}
+              Last updated {new Date(lastUpdated).toLocaleDateString()}
             </Text>
           </View>
         </View>
 
         <View style={styles.rightSection}>
-          <View style={styles.actionWrapper}>
-            {!isDownloading && <CloudDownload width={22} height={22} />}
+          <TouchableOpacity style={styles.actionButton}>
+            {!isDownloading && <CloudDownload width={23} height={23} />}
 
             {isDownloading && (
               <>
@@ -111,10 +111,10 @@ const CardDocuments = ({
                 </TouchableOpacity>
               </>
             )}
-          </View>
+          </TouchableOpacity>
         </View>
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 
