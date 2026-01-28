@@ -81,9 +81,27 @@ export const getDriveSubfolders = async () => {
   } catch (error) {
     console.error(
       'Failed to fetch drive folders',
-      error?.response?.data || error.message,
+      error?.response?.data || error.message || error,
     );
     return null;
+  }
+};
+
+export const getDriveFileContent = async subFolderId => {
+  try {
+    if (!subFolderId) throw new Error('Missing subFolder ID');
+
+    const res = await axios.get(
+      `${Config.API_URL}/drive/files?subFolderId=${subFolderId}`,
+    );
+
+    return res.data ?? [];
+  } catch (error) {
+    console.error(
+      `[GoogleDrive] Failed to fetch file content for subFolderId ${subFolderId}:`,
+      error?.response?.data || error.message,
+    );
+    return [];
   }
 };
 

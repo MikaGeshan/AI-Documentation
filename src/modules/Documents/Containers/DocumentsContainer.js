@@ -12,7 +12,6 @@ import ErrorDialog from '../../../components/Alerts/ErrorDialog';
 import Config from '../../../App/Network';
 import { useNavigation } from '@react-navigation/native';
 import Loader from '../../../components/Loaders/Loader';
-import { getDriveSubfolders } from '../../../App/Google';
 
 const DocumentsContainer = () => {
   const {
@@ -130,7 +129,7 @@ const DocumentsContainer = () => {
   const onRefresh = async () => {
     try {
       setRefreshing(true);
-      const data = await getDriveSubfolders();
+      const data = await loadFolders();
       if (data) {
         await AsyncStorage.setItem('doc-folder-map', JSON.stringify(data));
         await loadFolders();

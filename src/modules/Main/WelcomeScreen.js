@@ -2,6 +2,8 @@ import { KeyboardAvoidingView, SafeAreaView, StyleSheet } from 'react-native';
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
 import Onboarding from '../../components/Cards/Onboarding';
+import manBook from '../../property/images/man-book.png';
+import manLaptop from '../../property/images/man-laptop.png';
 
 const WelcomeScreen = () => {
   const navigation = useNavigation();
@@ -11,14 +13,14 @@ const WelcomeScreen = () => {
       title: 'Official Documentation for Mobile Front End Developer',
       subtitle:
         'This app is designed to help you search for related documentation on mobile front-end development.',
-      image: require('../../property/images/man-book.png'),
+      image: manBook,
     },
     {
       title: 'Getting Started',
       subtitle:
         'Let’s begin your first tour on our application! We’re excited to guide you through the key features so you can get the most out of your experience.',
       backgroundColor: '#FFFFF',
-      image: require('../../property/images/man-laptop.png'),
+      image: manLaptop,
     },
   ];
 

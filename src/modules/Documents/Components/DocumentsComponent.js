@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   TouchableOpacity,
   RefreshControl,
+  View,
 } from 'react-native';
 import { Icon } from '../../../components/Icons/Icon';
 import Accordion from '../../../components/Selects/Accordion';
@@ -16,6 +17,7 @@ import FloatingActionButton from '../../../components/Buttons/FloatingActionButt
 import InputModal from '../../../components/Inputs/InputModal';
 import InputSelect from '../../../components/Inputs/InputSelect';
 import UploadDirectoryModal from '../../../components/Uploads/UploadDirectoryModal';
+import CardDocuments from '../../../components/Cards/CardDocuments';
 
 const DocumentsComponent = ({
   folders,
@@ -51,29 +53,30 @@ const DocumentsComponent = ({
 }) => {
   const renderFolders = () => {
     return folders.map(folder => {
-      const isThisExpanded = expandedFolder === folder.id;
+      const isExpanded = expandedFolder === folder.id;
       return (
         <Accordion
           key={folder.id}
-          title={folder.folderName}
-          isExpanded={!!isThisExpanded}
+          title={folder.name}
+          isExpanded={!!isExpanded}
           onToggle={() =>
             setExpandedFolder(expandedFolder === folder.id ? null : folder.id)
           }
         >
           {Array.isArray(folder.files) && folder.files.length > 0 ? (
             folder.files.map((doc, idx) => (
-              <TouchableOpacity
-                key={idx}
-                style={styles.itemContainer}
-                onPress={() => {
-                  setSelectedDoc(doc);
-                  setTimeout(() => setShowOption(true), 100);
-                }}
-              >
-                <Text style={styles.itemText}>{formatDocName(doc.name)}</Text>
-                <Icon name="Ellipsis" size={16} color="#4aa8ea" />
-              </TouchableOpacity>
+              <View>
+                <CardDocuments
+                  key={idx}
+                  name={doc.name}
+                  mimeType={doc.mimeType}
+                  lastUpdated={doc.modifiedTime}
+                  onPress={() => {
+                    setSelectedDoc(doc);
+                    setTimeout(() => setShowOption(true), 100);
+                  }}
+                />
+              </View>
             ))
           ) : (
             <Text style={styles.noItemText}>(No documents)</Text>

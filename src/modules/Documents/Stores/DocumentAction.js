@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getDriveSubfolders } from '../../../App/Google';
+import { getDriveFileContent, getDriveSubfolders } from '../../../App/Google';
 
 export const DocumentAction = create(set => ({
   folders: [],
@@ -22,27 +22,41 @@ export const DocumentAction = create(set => ({
   setRefreshing: refreshing => set({ refreshing }),
 
   loadFolders: async () => {
-    set({ loading: true, initialLoadProgress: 0 });
+    set({ loading: true });
 
     try {
       const data = await getDriveSubfolders();
-      console.log(data);
+      const subfolders = data?.subfolders ?? [];
 
-      if (!data?.subfolders) {
-        set({ folders: [], loading: false, initialLoadProgress: 100 });
-        return;
-      }
+      const folders = await Promise.all(
+        subfolders.map(async ({ id, name, mimeType, modifiedTime }) => {
+          const filesRes = await getDriveFileContent(id);
 
-      const folderList = data.subfolders.map(sub => ({
-        id: sub.id,
-        folderName: sub.name,
-        webViewLink: sub.webViewLink,
-        files: sub.files || [],
-      }));
+          const files =
+            filesRes?.map(file => ({
+              id: file.id,
+              name: file.name,
+              mimeType: file.mimeType,
+              downloadUrl:
+                file.mimeType === 'application/vnd.google-apps.document'
+                  ? `https://docs.google.com/document/d/${file.id}/export?format=pdf`
+                  : `https://drive.google.com/uc?id=${file.id}&export=download`,
+            })) ?? [];
 
-      set({ folders: folderList, initialLoadProgress: 100 });
+          return {
+            id,
+            name,
+            mimeType,
+            modifiedTime,
+            files,
+          };
+        }),
+      );
+
+      set({ folders });
     } catch (e) {
       console.error('Error loading folders:', e);
+      set({ folders: [] });
     } finally {
       set({ loading: false });
     }
