@@ -96,36 +96,6 @@ const DocumentsContainer = () => {
       .join(' ');
   };
 
-  // const convertDocument = async fileId => {
-  //   try {
-  //     if (!fileId) throw new Error('Missing file ID');
-
-  //     const backendUrl = `${Config.API_URL}/api/convert-docs`;
-  //     console.log('Calling backend at:', backendUrl);
-
-  //     const response = await axios.post(backendUrl, { file_id: fileId });
-  //     const data = response.data;
-
-  //     if (data?.error) {
-  //       throw new Error(`Backend error: ${data.error}`);
-  //     }
-
-  //     if (!data?.text) {
-  //       throw new Error('Invalid response from backend');
-  //     }
-
-  //     console.log('Document conversion successful from backend');
-  //     return {
-  //       fileId,
-  //       title: data.title || 'Untitled',
-  //       content: data.text,
-  //     };
-  //   } catch (error) {
-  //     console.error('Document conversion failed:', error.message);
-  //     return null;
-  //   }
-  // };
-
   const onRefresh = async () => {
     try {
       setRefreshing(true);
@@ -195,72 +165,72 @@ const DocumentsContainer = () => {
     }
   };
 
-  const downloadAndShareFile = async doc => {
-    try {
-      const { id, name } = doc;
-      const downloadUrl = `${Config.API_URL}/api/download-docs?file_id=${id}`;
-      const localPath = `${RNFS.DocumentDirectoryPath}/${
-        name || 'Untitled Document'
-      }.pdf`;
+  // const downloadAndShareFile = async doc => {
+  //   try {
+  //     const { id, name } = doc;
+  //     const downloadUrl = `${Config.API_URL}/api/download-docs?file_id=${id}`;
+  //     const localPath = `${RNFS.DocumentDirectoryPath}/${
+  //       name || 'Untitled Document'
+  //     }.pdf`;
 
-      console.log('Starting download for:', {
-        id,
-        name,
-        downloadUrl,
-        localPath,
-      });
+  //     console.log('Starting download for:', {
+  //       id,
+  //       name,
+  //       downloadUrl,
+  //       localPath,
+  //     });
 
-      setIsDownloading(true);
-      setDownloadProgress(0);
+  //     setIsDownloading(true);
+  //     setDownloadProgress(0);
 
-      const download = RNFS.downloadFile({
-        fromUrl: downloadUrl,
-        toFile: localPath,
-        progress: data => {
-          const progress = Math.floor(
-            (data.bytesWritten / data.contentLength) * 100,
-          );
-          console.log(`Download progress: ${progress}%`);
-          setDownloadProgress(progress);
-        },
-        begin: () => {
-          console.log('Download started...');
-          setDownloadProgress(0);
-        },
-        progressDivider: 1,
-      });
+  //     const download = RNFS.downloadFile({
+  //       fromUrl: downloadUrl,
+  //       toFile: localPath,
+  //       progress: data => {
+  //         const progress = Math.floor(
+  //           (data.bytesWritten / data.contentLength) * 100,
+  //         );
+  //         console.log(`Download progress: ${progress}%`);
+  //         setDownloadProgress(progress);
+  //       },
+  //       begin: () => {
+  //         console.log('Download started...');
+  //         setDownloadProgress(0);
+  //       },
+  //       progressDivider: 1,
+  //     });
 
-      const result = await download.promise;
-      console.log('Download result:', result);
+  //     const result = await download.promise;
+  //     console.log('Download result:', result);
 
-      setIsDownloading(false);
+  //     setIsDownloading(false);
 
-      if (result.statusCode === 200) {
-        console.log('Download completed at:', localPath);
+  //     if (result.statusCode === 200) {
+  //       console.log('Download completed at:', localPath);
 
-        if (Platform.OS === 'ios') {
-          console.log('Sharing file on iOS:', localPath);
-          await Share.open({
-            url: 'file://' + localPath,
-            type: 'application/pdf',
-          });
-        } else {
-          console.log('Skipping share on Android, file saved at:', localPath);
-        }
+  //       if (Platform.OS === 'ios') {
+  //         console.log('Sharing file on iOS:', localPath);
+  //         await Share.open({
+  //           url: 'file://' + localPath,
+  //           type: 'application/pdf',
+  //         });
+  //       } else {
+  //         console.log('Skipping share on Android, file saved at:', localPath);
+  //       }
 
-        setSuccessMessage('Document Successfully Downloaded.');
-        setShowSuccess(true);
-      } else {
-        console.error(`Download failed with status: ${result.statusCode}`);
-        throw new Error(`Download failed. Status: ${result.statusCode}`);
-      }
-    } catch (err) {
-      console.error('Error downloading document:', err);
-      setIsDownloading(false);
-      setErrorMessage('Error Downloading Document');
-      setShowError(true);
-    }
-  };
+  //       setSuccessMessage('Document Successfully Downloaded.');
+  //       setShowSuccess(true);
+  //     } else {
+  //       console.error(`Download failed with status: ${result.statusCode}`);
+  //       throw new Error(`Download failed. Status: ${result.statusCode}`);
+  //     }
+  //   } catch (err) {
+  //     console.error('Error downloading document:', err);
+  //     setIsDownloading(false);
+  //     setErrorMessage('Error Downloading Document');
+  //     setShowError(true);
+  //   }
+  // };
 
   const viewDocument = () => {
     setShowOption(false);
@@ -298,7 +268,7 @@ const DocumentsContainer = () => {
   const documentAction = async doc => {
     if (!doc) return;
     if (selectMode === 'download') {
-      await downloadAndShareFile(doc);
+      // await downloadAndShareFile(doc);
     } else if (selectMode === 'delete') {
       await deleteDocument(doc.id);
       await loadFolders();
@@ -332,7 +302,6 @@ const DocumentsContainer = () => {
         setUploadModalVisible={setUploadModalVisible}
         createFolder={createFolder}
         uploadToDrive={uploadToDrive}
-        downloadAndShareFile={downloadAndShareFile}
         documentAction={documentAction}
         onRefresh={onRefresh}
         setShowSuccess={setShowSuccess}

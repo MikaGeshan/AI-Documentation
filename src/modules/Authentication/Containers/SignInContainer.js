@@ -3,7 +3,6 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import SignInComponent from '../Components/SignInComponent';
 import SignInActions from '../Stores/SignInActions';
-import { signInWithGoogle } from '../../../App/Google';
 import Config from '../../../App/Network';
 import SuccessDialog from '../../../components/Alerts/SuccessDialog';
 import ErrorDialog from '../../../components/Alerts/ErrorDialog';
@@ -116,9 +115,6 @@ const SignInContainer = () => {
         setShowPassword={setShowPassword}
         handleLogin={handleLogin}
         handleForgotPassword={handleForgotPassword}
-        signInWithGoogle={() =>
-          signInWithGoogle({ navigation, handleSuccessfulLogin })
-        }
         navigateToRegister={() => navigation.navigate('Register')}
       />
 

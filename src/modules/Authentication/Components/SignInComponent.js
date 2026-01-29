@@ -24,7 +24,6 @@ const SignInComponent = ({
   updateFormData,
   setShowPassword,
   handleLogin,
-  signInWithGoogle,
   navigateToRegister,
 }) => {
   const styles = StyleSheet.create({
@@ -230,28 +229,10 @@ const SignInComponent = ({
                 disabled={isLoading}
               />
             </>
-            {/* {Platform.OS === 'ios' && (
-              <>
-                <View style={styles.separatorContainer}>
-                  <View style={styles.separatorLine} />
-                  <Text style={styles.separatorText}>Or Sign In With</Text>
-                  <View style={styles.separatorLine} />
-                </View>
-                <View style={styles.googleButtonContainer}>
-                  <GoogleSigninButton
-                    onPress={() => signInWithGoogle()}
-                    size={GoogleSigninButton.Size.Wide}
-                    color={GoogleSigninButton.Color.Dark}
-                  />
-                </View>
-              </>
-            )} */}
-            {/* {Platform.OS === 'android' && ( */}
             <View style={styles.signUpContainer}>
               <Text style={styles.signUpText}>Don't have an account?</Text>
               <Hyperlink text="Register Now!" onPress={navigateToRegister} />
             </View>
-            {/* )} */}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

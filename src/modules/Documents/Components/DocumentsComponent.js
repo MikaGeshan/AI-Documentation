@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   View,
+  Alert,
 } from 'react-native';
 import { Icon } from '../../../components/Icons/Icon';
 import Accordion from '../../../components/Selects/Accordion';
@@ -18,6 +19,7 @@ import InputModal from '../../../components/Inputs/InputModal';
 import InputSelect from '../../../components/Inputs/InputSelect';
 import UploadDirectoryModal from '../../../components/Uploads/UploadDirectoryModal';
 import CardDocuments from '../../../components/Cards/CardDocuments';
+import { downloadDriveFile } from '../../../App/Google';
 
 const DocumentsComponent = ({
   folders,
@@ -42,7 +44,6 @@ const DocumentsComponent = ({
   setUploadModalVisible,
   createFolder,
   uploadToDrive,
-  downloadAndShareFile,
   documentAction,
   onRefresh,
   setShowSuccess,
@@ -71,9 +72,13 @@ const DocumentsComponent = ({
                   name={doc.name}
                   mimeType={doc.mimeType}
                   lastUpdated={folder.modifiedTime}
-                  onPress={() => {
-                    setSelectedDoc(doc);
-                    setTimeout(() => setShowOption(true), 100);
+                  isDownloading={false}
+                  onPressDownload={async () => {
+                    try {
+                      await downloadDriveFile(doc.id, doc.name);
+                    } catch (e) {
+                      Alert.alert('Download error', e);
+                    }
                   }}
                 />
               </View>
@@ -139,7 +144,7 @@ const DocumentsComponent = ({
           option2Text="Download"
           onOption1={viewDocument}
           onOption2={async () => {
-            await downloadAndShareFile(selectedDoc);
+            // await downloadAndShareFile(selectedDoc);
             setShowOption(false);
           }}
         />

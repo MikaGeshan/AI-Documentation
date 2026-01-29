@@ -15,6 +15,7 @@ const CardDocuments = ({
   mimeType,
   isDownloading,
   onCancel,
+  onPressDownload,
 }) => {
   const styles = StyleSheet.create({
     buttonContainer: {
@@ -98,7 +99,10 @@ const CardDocuments = ({
         </View>
 
         <View style={styles.rightSection}>
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={onPressDownload}
+          >
             {!isDownloading && <CloudDownload width={23} height={23} />}
 
             {isDownloading && (
