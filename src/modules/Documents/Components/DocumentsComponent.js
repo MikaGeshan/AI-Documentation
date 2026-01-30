@@ -51,6 +51,8 @@ const DocumentsComponent = ({
   navigation,
   selectedFolderId,
   viewDocument,
+  isDownloading,
+  setIsDownloading,
 }) => {
   const renderFolders = () => {
     return folders.map(folder => {
@@ -65,19 +67,29 @@ const DocumentsComponent = ({
           }
         >
           {Array.isArray(folder.files) && folder.files.length > 0 ? (
-            folder.files.map((doc, idx) => (
+            folder.files.map((file, idx) => (
               <View>
                 <CardDocuments
                   key={idx}
-                  name={doc.name}
-                  mimeType={doc.mimeType}
+                  name={file.name}
+                  mimeType={file.mimeType}
                   lastUpdated={folder.modifiedTime}
-                  isDownloading={false}
+                  isDownloading={!!isDownloading[file.id]}
                   onPressDownload={async () => {
+                    if (isDownloading[file.id]) return;
+
+                    setIsDownloading(prev => ({ ...prev, [file.id]: true }));
+
                     try {
-                      await downloadDriveFile(doc.id, doc.name);
+                      await downloadDriveFile(file.id, file.name);
                     } catch (e) {
-                      Alert.alert('Download error', e);
+                      Alert.alert(
+                        'Download error',
+                        e?.message || 'Failed to download file',
+                      );
+                      setShowError(true);
+                    } finally {
+                      setIsDownloading(prev => ({ ...prev, [file.id]: false }));
                     }
                   }}
                 />

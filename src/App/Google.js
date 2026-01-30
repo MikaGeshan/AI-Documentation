@@ -1,6 +1,6 @@
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 // import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { GOOGLE_WEB_CLIENT_ID, GOOGLE_IOS_CLIENT_ID, FOLDER_ID } from '@env';
+import { FOLDER_ID } from '@env';
 import axios from 'axios';
 import Config from './Network';
 import { Platform } from 'react-native';
@@ -78,8 +78,6 @@ export const getDriveSubfolders = async () => {
 
     const subfolders = res.data ?? [];
 
-    console.log('=== subfolders:', subfolders);
-
     return { subfolders };
   } catch (error) {
     console.error(
@@ -105,6 +103,22 @@ export const getDriveFileContent = async subFolderId => {
       error?.response?.data || error.message,
     );
     return [];
+  }
+};
+
+export const getAllDriveFiles = async () => {
+  try {
+    const res = await axios.get(
+      `${Config.API_URL}/drive/all-files/${FOLDER_ID}`,
+    );
+
+    return res.data;
+  } catch (error) {
+    console.error(
+      '=== failed to fetch all files:',
+      error?.response?.data || error.message,
+    );
+    return null;
   }
 };
 
