@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>NSCameraUsageDescription</key>
-  <string>Camera permission is required for video calls.</string>
-  <key>NSMicrophoneUsageDescription</key>
-  <string>Microphone permission is required for voice and video calls.</string>
   <key>LSApplicationQueriesSchemes</key>
   <array>
     <string>fb</string>
@@ -72,7 +68,7 @@
     <true/>
   </dict>
   <key>NSLocationWhenInUseUsageDescription</key>
-  <string></string>
+  <string>Location permission is required to search and customize results based on your current region.</string>
   <key>RCTNewArchEnabled</key>
   <true/>
   <key>UILaunchStoryboardName</key>

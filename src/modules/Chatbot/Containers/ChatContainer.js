@@ -6,7 +6,7 @@ import Fuse from 'fuse.js';
 import ChatComponent from '../Components/ChatComponent';
 import { ChatAction } from '../Stores/ChatAction';
 import SignInActions from '../../Authentication/Stores/SignInActions';
-import { getDriveSubfolders } from '../../../App/Google';
+import { getDriveSubfolders, getDriveFileContent } from '../../../App/Google';
 import { cutText } from '../../../App/Locale';
 import Config from '../../../App/Network';
 import { DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_URL } from '@env';
@@ -244,20 +244,26 @@ const retrieveRelevantDocs = async (userText, allDocs, userEmail, signal) => {
   let match = null;
 
   if (selectedName && selectedName !== 'UNKNOWN') {
+    // Clean selectedName by stripping markdown format and suffixes like " (folder: ...)"
+    let cleanSelectedName = selectedName.replace(/^-\s*/, '').replace(/`/g, '').trim();
+    if (cleanSelectedName.includes(' (folder: ')) {
+      cleanSelectedName = cleanSelectedName.split(' (folder: ')[0];
+    }
+
     const fuse = new Fuse(allDocs, {
       keys: ['folderName', 'name'],
-      threshold: 0.3,
+      threshold: 0.5, // slightly more relaxed threshold for better matching
     });
 
-    const results = fuse.search(selectedName);
+    const results = fuse.search(cleanSelectedName);
 
     match = results.find(
-      r => r.item.folderName?.toLowerCase() === selectedName.toLowerCase(),
+      r => r.item.folderName?.toLowerCase() === cleanSelectedName.toLowerCase(),
     )?.item;
 
     if (!match) {
       match = results.find(
-        r => r.item.name?.toLowerCase() === selectedName.toLowerCase(),
+        r => r.item.name?.toLowerCase() === cleanSelectedName.toLowerCase(),
       )?.item;
     }
 
@@ -334,12 +340,13 @@ const summarizeDocuments = async (
   const summaries = [];
 
   for (const doc of relevantDocs) {
-    let cached = await getCachedDocument(doc.id);
+    const docId = doc.id || doc.fileId;
+    let cached = await getCachedDocument(docId);
     if (!cached) {
       try {
-        cached = await convertDocument(doc.id, userEmail, signal);
+        cached = await convertDocument(docId, userEmail, signal);
       } catch (e) {
-        log('convertDocument while summarizing failed', doc.id, e.message);
+        log('convertDocument while summarizing failed', docId, e.message);
       }
     }
     if (!cached?.content) continue;
@@ -379,14 +386,34 @@ const compareSummaries = async (summaries, userText, signal) => {
   const combined = summaries
     .map(s => `📄 ${s.title} (Folder: ${s.folder})\n${s.summary}\n---`)
     .join('\n\n');
-  const comparisonPrompt = `Kamu adalah analis dokumen cerdas.\n\nTugas: 1) Bandingkan isi antar dokumen (kesamaan, perbedaan, kontradiksi). 2) Berikan jawaban akhir yang akurat untuk pertanyaan pengguna. 3) Sertakan referensi ringan seperti \"berdasarkan dokumen X\".\n\nPertanyaan pengguna: "${userText}"\n\nRingkasan dokumen:\n${combined}`;
+  const comparisonPrompt = `Kamu adalah analis dokumen cerdas.\n\nTugas: 1) Bandingkan isi antar dokumen (kesamaan, perbedaan, kontradiksi). 2) Berikan jawaban akhir yang akurat untuk pertanyaan pengguna. 3) Sertakan referensi ringan seperti \"berdasarkan dokumen X\".`;
 
   const data = await callDeepSeek({
     temperature: 0.35,
-    messages: [{ role: 'system', content: comparisonPrompt }],
+    messages: [
+      { role: 'system', content: comparisonPrompt },
+      { role: 'user', content: `Pertanyaan pengguna: "${userText}"\n\nRingkasan dokumen:\n${combined}` },
+    ],
     signal,
   });
   return data?.choices?.[0]?.message?.content?.trim();
+};
+
+const getAllDocuments = async () => {
+  const folderData = await getDriveSubfolders();
+  const subfolders = folderData?.subfolders ?? [];
+
+  const foldersWithFiles = await Promise.all(
+    subfolders.map(async folder => {
+      const files = await getDriveFileContent(folder.id);
+      return {
+        ...folder,
+        files: files || [],
+      };
+    }),
+  );
+
+  return foldersWithFiles;
 };
 
 const ChatContainer = () => {
@@ -403,11 +430,10 @@ const ChatContainer = () => {
 
   const preloadAllDocuments = async () => {
     try {
-      const folderData = await getDriveSubfolders();
-      if (!folderData?.subfolders) return;
+      const foldersWithFiles = await getAllDocuments();
 
       const folderMap = Object.fromEntries(
-        folderData.subfolders.map(subfolder => [
+        foldersWithFiles.map(subfolder => [
           subfolder.name,
           subfolder.files,
         ]),
@@ -459,9 +485,9 @@ const ChatContainer = () => {
     try {
       showStage('Mencari dokumen relevan...');
 
-      const folderData = await withRetries(() => getDriveSubfolders());
+      const foldersWithFiles = await withRetries(() => getAllDocuments());
       const allDocs =
-        folderData?.subfolders?.flatMap(folder =>
+        foldersWithFiles.flatMap(folder =>
           folder.files.map(file => ({
             ...file,
             folderName: folder.name,

@@ -37,20 +37,9 @@ const ExploreTabIcon = ({ color, size }) => (
 );
 
 const BottomTabNavigation = () => {
-  const { isAdmin } = SignInActions.getState();
   const logout = SignInActions(state => state.logout);
-  const navigation = useNavigation();
-
-  const handleContactPress = () => {
-    if (isAdmin) {
-      navigation.navigate('Receiver');
-    } else {
-      navigation.navigate('Caller');
-    }
-  };
 
   const headerProps = {
-    onContactPress: handleContactPress,
     onLogoutPress: logout,
   };
 

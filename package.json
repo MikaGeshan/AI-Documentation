@@ -6,7 +6,7 @@
     "android": "react-native run-android",
     "ios": "react-native run-ios",
     "lint": "eslint .",
-    "dev": "react-native start",
+    "dev": "react-native start --reset-cache",
     "test": "jest"
   },
   "dependencies": {
@@ -39,9 +39,7 @@
     "react-native-screens": "^4.11.1",
     "react-native-share": "^12.1.1",
     "react-native-svg": "^15.12.0",
-    "react-native-webrtc": "^124.0.6",
     "react-native-webview": "^13.15.0",
-    "socket.io-client": "^4.8.1",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
