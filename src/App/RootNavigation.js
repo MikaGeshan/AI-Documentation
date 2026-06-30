@@ -72,7 +72,7 @@ const BottomTabNavigation = () => {
             <Header
               {...headerProps}
               title="Mobile Documentation Chatbot"
-              description="Powered by DeepSeek"
+              description="Powered by Gemini"
             />
           ),
           tabBarIcon: ChatTabIcon,

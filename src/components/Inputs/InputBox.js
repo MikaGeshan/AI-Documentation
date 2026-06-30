@@ -1,7 +1,7 @@
 import { StyleSheet, TextInput, View } from 'react-native';
 import React, { useState } from 'react';
 import ButtonSend from '../Buttons/ButtonSend';
-import { abortDeepSeekRequest } from '../../modules/Chatbot/Containers/ChatContainer';
+import { abortGeminiRequest } from '../../modules/Chatbot/Containers/ChatContainer';
 
 const InputBox = ({ onSend }) => {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -26,7 +26,7 @@ const InputBox = ({ onSend }) => {
   const handleButtonPress = () => {
     if (isProcessing) {
       console.log('Mode: STOP — Membatalkan permintaan...');
-      abortDeepSeekRequest();
+      abortGeminiRequest();
       setIsProcessing(false);
     } else {
       sendMessage();
